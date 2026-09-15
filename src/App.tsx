@@ -1194,6 +1194,11 @@ function App() {
       className="flex flex-col h-screen overflow-hidden bg-background text-foreground selection:bg-primary/30 pb-4"
       style={{ overflowX: "hidden", paddingTop: contentTopOffset }}
     >
+      <div className="bit2-brandbar" data-tauri-drag-region>
+        <div className="bit2-brandmark"><span>↗</span></div>
+        <div><div className="bit2-brandname">bit2-switch</div><div className="bit2-brandtag">AI TOOL CONTROL CENTER</div></div>
+        <div className="bit2-live"><i /> LIVE WORKSPACE</div>
+      </div>
       {(dragBarHeight > 0 || useAppWindowControls) && (
         <div
           className="fixed top-0 left-0 right-0 z-[70] flex items-center justify-end px-2"
