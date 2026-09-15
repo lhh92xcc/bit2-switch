@@ -8,6 +8,7 @@ mod codex_config;
 mod codex_history_migration;
 mod codex_state_db;
 mod commands;
+mod bit2_api;
 mod config;
 mod database;
 mod deeplink;
