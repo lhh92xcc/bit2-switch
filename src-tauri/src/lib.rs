@@ -255,6 +255,11 @@ fn handle_deeplink_url(
         return false;
     }
 
+    if url_str.starts_with("bit2switch://auth") {
+        let _ = app.emit("bit2-auth-callback", url_str.to_string());
+        return true;
+    }
+
     log::info!(
         "✓ Deep link URL detected from {source}: {}",
         url_for_log(url_str)
@@ -1629,6 +1634,7 @@ pub fn run() {
             commands::store_bit2_secret,
             bit2_api::bit2_login,
             bit2_api::bit2_logout,
+            bit2_api::open_bit2_login,
             commands::probe_tool_installations,
             // Provider terminal
             commands::open_provider_terminal,
