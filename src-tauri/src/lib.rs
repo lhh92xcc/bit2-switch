@@ -9,6 +9,7 @@ mod codex_history_migration;
 mod codex_state_db;
 mod commands;
 mod bit2_api;
+pub use bit2_api::{bit2_login, bit2_logout};
 mod config;
 mod database;
 mod deeplink;
@@ -1626,6 +1627,8 @@ pub fn run() {
             commands::get_tool_versions,
             commands::run_tool_lifecycle_action,
             commands::store_bit2_secret,
+            bit2_api::bit2_login,
+            bit2_api::bit2_logout,
             commands::probe_tool_installations,
             // Provider terminal
             commands::open_provider_terminal,
