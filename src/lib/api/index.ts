@@ -15,6 +15,7 @@ export { openclawApi } from "./openclaw";
 export { sessionsApi } from "./sessions";
 export { workspaceApi } from "./workspace";
 export const bit2Api = {
+  async openLogin(origin = "https://bit2.ai") { await invoke("open_bit2_login", { origin }); },
   async login(origin: string, username: string, password: string) {
     return await invoke("bit2_login", { origin, username, password });
   },
