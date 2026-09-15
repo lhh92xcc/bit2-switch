@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tauri::Manager;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bit2Session {
@@ -50,6 +51,16 @@ pub async fn bit2_logout() -> Result<(), String> {
     }
     #[cfg(not(target_os = "macos"))]
     { Ok(()) }
+}
+
+#[tauri::command]
+pub fn open_bit2_login(app: tauri::AppHandle, origin: String) -> Result<(), String> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+    let url = format!("{}/login?redirect=bit2switch://auth", normalize_origin(&origin)?);
+    if let Some(window) = app.get_webview_window("bit2-login") { let _ = window.set_focus(); return Ok(()); }
+    WebviewWindowBuilder::new(&app, "bit2-login", WebviewUrl::External(url.parse().map_err(|e| format!("invalid login URL: {e}"))?))
+        .title("Sign in to bit2.ai").inner_size(460.0, 700.0).resizable(true).build().map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[cfg(test)]
