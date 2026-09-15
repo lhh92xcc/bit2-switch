@@ -92,6 +92,7 @@ import UnifiedSkillsPanel, {
 import { DeepLinkImportDialog } from "@/components/DeepLinkImportDialog";
 import { FirstRunNoticeDialog } from "@/components/FirstRunNoticeDialog";
 import { QuickSetupDialog } from "@/components/QuickSetupDialog";
+import { Bit2LoginDialog } from "@/components/Bit2LoginDialog";
 import { AgentsPanel } from "@/components/agents/AgentsPanel";
 import { UniversalProviderPanel } from "@/components/universal";
 import { McpIcon } from "@/components/BrandIcons";
@@ -187,6 +188,7 @@ function App() {
   const [settingsDefaultTab, setSettingsDefaultTab] = useState("general");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isQuickSetupOpen, setIsQuickSetupOpen] = useState(false);
+  const [isBit2LoginOpen, setIsBit2LoginOpen] = useState(false);
   const [isWindowMaximized, setIsWindowMaximized] = useState(false);
   const [mcpManagementBusy, setMcpManagementBusy] = useState(false);
   const [skillsManagementBusy, setSkillsManagementBusy] = useState(false);
@@ -1432,6 +1434,7 @@ function App() {
                 className="flex shrink-0 items-center gap-1.5"
                 style={{ WebkitAppRegion: "no-drag" } as any}
               >
+                <Button variant="outline" size="sm" onClick={() => setIsBit2LoginOpen(true)} className="mr-2 border-primary/40 text-primary">连接 bit2.ai</Button>
                 {currentView === "prompts" && promptPrimaryAction && (
                   <Button
                     variant="ghost"
@@ -1849,6 +1852,7 @@ function App() {
         onOpenChange={setIsQuickSetupOpen}
         onComplete={handleQuickSetup}
       />
+      <Bit2LoginDialog open={isBit2LoginOpen} onOpenChange={setIsBit2LoginOpen} onSuccess={() => { toast.success("bit2.ai 登录成功"); void queryClient.invalidateQueries(); }} />
     </div>
   );
 }
