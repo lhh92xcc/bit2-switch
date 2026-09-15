@@ -101,9 +101,9 @@ const KIMI_K3_COMPAT = {
 const piProviderPresetDefinitions: PiProviderPreset[] = [
   {
     name: "Kimi",
-    providerKey: "cc-switch-kimi",
-    websiteUrl: "https://platform.kimi.com?aff=cc-switch",
-    apiKeyUrl: "https://platform.kimi.com/console/api-keys?aff=cc-switch",
+    providerKey: "bit2-switch-kimi",
+    websiteUrl: "https://platform.kimi.com?aff=bit2-switch",
+    apiKeyUrl: "https://platform.kimi.com/console/api-keys?aff=bit2-switch",
     settingsConfig: {
       name: "Kimi",
       baseUrl: "https://api.moonshot.cn/v1",
@@ -131,9 +131,9 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Kimi For Coding",
-    providerKey: "cc-switch-kimi-for-coding",
-    websiteUrl: "https://www.kimi.com/code/?aff=cc-switch",
-    apiKeyUrl: "https://platform.kimi.com/console/api-keys?aff=cc-switch",
+    providerKey: "bit2-switch-kimi-for-coding",
+    websiteUrl: "https://www.kimi.com/code/?aff=bit2-switch",
+    apiKeyUrl: "https://platform.kimi.com/console/api-keys?aff=bit2-switch",
     settingsConfig: {
       name: "Kimi For Coding",
       baseUrl: "https://api.kimi.com/coding",
@@ -154,9 +154,9 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "PackyCode",
-    providerKey: "cc-switch-packy-code",
+    providerKey: "bit2-switch-packy-code",
     websiteUrl: "https://www.packyapi.ai",
-    apiKeyUrl: "https://www.packyapi.ai/register?aff=cc-switch",
+    apiKeyUrl: "https://www.packyapi.ai/register?aff=bit2-switch",
     settingsConfig: {
       name: "PackyCode",
       baseUrl: "https://www.packyapi.ai",
@@ -178,7 +178,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "ZetaAPI",
-    providerKey: "cc-switch-zeta-api",
+    providerKey: "bit2-switch-zeta-api",
     websiteUrl: "https://zetaapi.ai",
     apiKeyUrl: "https://zetaapi.ai/go/u117",
     settingsConfig: {
@@ -199,7 +199,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "APINebula",
-    providerKey: "cc-switch-apinebula",
+    providerKey: "bit2-switch-apinebula",
     websiteUrl: "https://apinebula.ai",
     apiKeyUrl: "https://apinebula.ai/VjM74M",
     settingsConfig: {
@@ -220,7 +220,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "AICodeMirror",
-    providerKey: "cc-switch-aicode-mirror",
+    providerKey: "bit2-switch-aicode-mirror",
     websiteUrl: "https://www.aicodemirror.ai",
     apiKeyUrl: "https://www.aicodemirror.ai/register?invitecode=9915W3",
     settingsConfig: {
@@ -245,7 +245,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "FennoAI",
-    providerKey: "cc-switch-fenno-ai",
+    providerKey: "bit2-switch-fenno-ai",
     websiteUrl: "https://api.fenno.ai",
     apiKeyUrl:
       "https://api.fenno.ai/register?redirect=/purchase?tab=subscription%26group=16&aff=P9MR3D3PLCNL",
@@ -267,7 +267,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "RunAPI",
-    providerKey: "cc-switch-run-api",
+    providerKey: "bit2-switch-run-api",
     websiteUrl: "https://runapi.co",
     apiKeyUrl: "https://runapi.co/register?aff=iOKB",
     settingsConfig: {
@@ -295,7 +295,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   {
     name: "Shengsuanyun",
     nameKey: "providerForm.presets.shengsuanyun",
-    providerKey: "cc-switch-shengsuanyun",
+    providerKey: "bit2-switch-shengsuanyun",
     websiteUrl: "https://www.shengsuanyun.com/?from=CH_4HHXMRYF",
     apiKeyUrl: "https://www.shengsuanyun.com/?from=CH_4HHXMRYF",
     settingsConfig: {
@@ -319,7 +319,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "AIGoCode",
-    providerKey: "cc-switch-aigo-code",
+    providerKey: "bit2-switch-aigo-code",
     websiteUrl: "https://aigocode.app",
     apiKeyUrl: "https://aigocode.app/invite/CC-SWITCH",
     settingsConfig: {
@@ -345,7 +345,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   {
     name: "Qiniu",
     nameKey: "providerForm.presets.qiniu",
-    providerKey: "cc-switch-qiniu",
+    providerKey: "bit2-switch-qiniu",
     websiteUrl: "https://s.qiniu.com/nMvAvy",
     apiKeyUrl: "https://s.qiniu.com/nMvAvy",
     settingsConfig: {
@@ -366,7 +366,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "AICoding",
-    providerKey: "cc-switch-aicoding",
+    providerKey: "bit2-switch-aicoding",
     websiteUrl: "https://aicoding.inc",
     apiKeyUrl: "https://aicoding.inc/i/CCSWITCH",
     settingsConfig: {
@@ -391,7 +391,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "SubRouter",
-    providerKey: "cc-switch-sub-router",
+    providerKey: "bit2-switch-sub-router",
     websiteUrl: "https://subrouter.ai",
     apiKeyUrl: "https://subrouter.ai/register?aff=l3ri",
     settingsConfig: {
@@ -412,7 +412,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "APIKEY.FUN",
-    providerKey: "cc-switch-apikey-fun",
+    providerKey: "bit2-switch-apikey-fun",
     websiteUrl: "https://apikey.fan",
     apiKeyUrl: "https://apikey.fan/register?aff=CCSwitch",
     settingsConfig: {
@@ -439,7 +439,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "9527CODE",
-    providerKey: "cc-switch-9527-code",
+    providerKey: "bit2-switch-9527-code",
     websiteUrl: "https://9527.codes",
     apiKeyUrl: "https://9527.codes/register?aff=e5zI",
     settingsConfig: {
@@ -466,7 +466,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Code0",
-    providerKey: "cc-switch-code0",
+    providerKey: "bit2-switch-code0",
     websiteUrl: "https://code0.ai",
     apiKeyUrl: "https://code0.ai/agent/register/B2XHxGjGmRvqgznY",
     settingsConfig: {
@@ -487,7 +487,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "TeamoRouter",
-    providerKey: "cc-switch-teamo-router",
+    providerKey: "bit2-switch-teamo-router",
     websiteUrl: "https://teamorouter.cn",
     apiKeyUrl:
       "https://teamorouter.cn/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
@@ -509,9 +509,9 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "PPIO",
-    providerKey: "cc-switch-ppio",
+    providerKey: "bit2-switch-ppio",
     websiteUrl: "https://ppio.com",
-    apiKeyUrl: "https://ppio.com/activity/ccswitch",
+    apiKeyUrl: "https://ppio.com/activity/bit2switch",
     settingsConfig: {
       name: "PPIO",
       baseUrl: "https://api.ppio.com/openai/v1",
@@ -538,7 +538,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "ClaudeCN",
-    providerKey: "cc-switch-claude-cn",
+    providerKey: "bit2-switch-claude-cn",
     websiteUrl: "https://claudecn.top",
     apiKeyUrl: "https://claudecn.ai/register?aff=HEL9",
     settingsConfig: {
@@ -565,11 +565,11 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "火山Agentplan",
-    providerKey: "cc-switch-agentplan",
+    providerKey: "bit2-switch-agentplan",
     websiteUrl:
-      "https://www.volcengine.com/activity/codingplan?ac=MMAP8JTTCAQ2&rc=6J6FV5N2&utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+      "https://www.volcengine.com/activity/codingplan?ac=MMAP8JTTCAQ2&rc=6J6FV5N2&utm_campaign=hw&utm_content=bit2switch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=bit2switch",
     apiKeyUrl:
-      "https://www.volcengine.com/activity/codingplan?ac=MMAP8JTTCAQ2&rc=6J6FV5N2&utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+      "https://www.volcengine.com/activity/codingplan?ac=MMAP8JTTCAQ2&rc=6J6FV5N2&utm_campaign=hw&utm_content=bit2switch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=bit2switch",
     settingsConfig: {
       name: "火山Agentplan",
       baseUrl: "https://ark.cn-beijing.volces.com/api/coding/v3",
@@ -589,11 +589,11 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "BytePlus",
-    providerKey: "cc-switch-byte-plus",
+    providerKey: "bit2-switch-byte-plus",
     websiteUrl:
-      "https://www.byteplus.com/en/product/modelark?utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+      "https://www.byteplus.com/en/product/modelark?utm_campaign=hw&utm_content=bit2switch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=bit2switch",
     apiKeyUrl:
-      "https://www.byteplus.com/en/product/modelark?utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+      "https://www.byteplus.com/en/product/modelark?utm_campaign=hw&utm_content=bit2switch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=bit2switch",
     settingsConfig: {
       name: "BytePlus",
       baseUrl: "https://ark.ap-southeast.bytepluses.com/api/coding/v3",
@@ -614,11 +614,11 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   {
     name: "Volcengine Doubao",
     nameKey: "providerForm.presets.doubaoseed",
-    providerKey: "cc-switch-dou-bao-seed",
+    providerKey: "bit2-switch-dou-bao-seed",
     websiteUrl:
-      "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D&utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+      "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D&utm_campaign=hw&utm_content=bit2switch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=bit2switch",
     apiKeyUrl:
-      "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D&utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+      "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D&utm_campaign=hw&utm_content=bit2switch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=bit2switch",
     settingsConfig: {
       name: "Volcengine Doubao",
       baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
@@ -638,7 +638,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "A6API",
-    providerKey: "cc-switch-a6-api",
+    providerKey: "bit2-switch-a6-api",
     websiteUrl: "https://www.a6api.com",
     apiKeyUrl: "https://a6api.com/register?aff=AqNr",
     settingsConfig: {
@@ -659,7 +659,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "CCSub",
-    providerKey: "cc-switch-ccsub",
+    providerKey: "bit2-switch-ccsub",
     websiteUrl: "https://www.ccsub.net",
     apiKeyUrl: "https://www.ccsub.net/register?ref=Y6Z8DXEA",
     settingsConfig: {
@@ -680,7 +680,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "SSSAiCode",
-    providerKey: "cc-switch-sssai-code",
+    providerKey: "bit2-switch-sssai-code",
     websiteUrl: "https://sssaicodeapi.com",
     apiKeyUrl: "https://sssaicodeapi.com/register?ref=DCP0SM",
     settingsConfig: {
@@ -705,9 +705,9 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "SoleAPI",
-    providerKey: "cc-switch-sole-api",
+    providerKey: "bit2-switch-sole-api",
     websiteUrl: "https://soleapi.com",
-    apiKeyUrl: "https://soleapi.com/r/ccswitch",
+    apiKeyUrl: "https://soleapi.com/r/bit2switch",
     settingsConfig: {
       name: "SoleAPI",
       baseUrl: "https://soleapi.com",
@@ -732,7 +732,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Micu",
-    providerKey: "cc-switch-micu",
+    providerKey: "bit2-switch-micu",
     websiteUrl: "https://www.micuapi.ai",
     apiKeyUrl: "https://www.micuapi.ai/register?aff=aOYQ",
     settingsConfig: {
@@ -757,7 +757,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "RightCode",
-    providerKey: "cc-switch-right-code",
+    providerKey: "bit2-switch-right-code",
     websiteUrl: "https://www.rightapi.ai",
     apiKeyUrl: "https://www.rightapi.ai/register?aff=CCSWITCH",
     settingsConfig: {
@@ -779,7 +779,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "ETok.ai",
-    providerKey: "cc-switch-etok-ai",
+    providerKey: "bit2-switch-etok-ai",
     websiteUrl: "https://etok.ai",
     apiKeyUrl: "https://etok.ai",
     settingsConfig: {
@@ -804,7 +804,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Cubence",
-    providerKey: "cc-switch-cubence",
+    providerKey: "bit2-switch-cubence",
     websiteUrl: "https://cubence.com",
     apiKeyUrl: "https://cubence.com/signup?code=CCSWITCH&source=ccs",
     settingsConfig: {
@@ -829,9 +829,9 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "CrazyRouter",
-    providerKey: "cc-switch-crazy-router",
+    providerKey: "bit2-switch-crazy-router",
     websiteUrl: "https://www.crazyrouter.com",
-    apiKeyUrl: "https://www.crazyrouter.com/register?aff=OZcm&ref=cc-switch",
+    apiKeyUrl: "https://www.crazyrouter.com/register?aff=OZcm&ref=bit2-switch",
     settingsConfig: {
       name: "CrazyRouter",
       baseUrl: "https://cn.crazyrouter.com",
@@ -854,7 +854,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "DMXAPI",
-    providerKey: "cc-switch-dmxapi",
+    providerKey: "bit2-switch-dmxapi",
     websiteUrl: "https://www.dmxapi.cn",
     apiKeyUrl: "https://www.dmxapi.cn",
     settingsConfig: {
@@ -877,10 +877,10 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "SudoCode.chat",
-    providerKey: "cc-switch-sudo-code-chat",
+    providerKey: "bit2-switch-sudo-code-chat",
     websiteUrl: "https://sudocode.chat",
     apiKeyUrl:
-      "https://sudocode.chat/sign-up?aff=CC-SWITCH&utm_source=cc-switch&utm_medium=sponsor&utm_campaign=ccswitch",
+      "https://sudocode.chat/sign-up?aff=CC-SWITCH&utm_source=bit2-switch&utm_medium=sponsor&utm_campaign=bit2switch",
     settingsConfig: {
       name: "SudoCode.chat",
       baseUrl: "https://api.sudocode.chat/v1",
@@ -899,7 +899,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "SudoCode.us",
-    providerKey: "cc-switch-sudo-code-us",
+    providerKey: "bit2-switch-sudo-code-us",
     websiteUrl: "https://sudocode.us",
     apiKeyUrl: "https://sudocode.us",
     settingsConfig: {
@@ -919,7 +919,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Amux",
-    providerKey: "cc-switch-amux",
+    providerKey: "bit2-switch-amux",
     websiteUrl: "https://amux.ai",
     apiKeyUrl: "https://amux.ai",
     settingsConfig: {
@@ -938,7 +938,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "AtlasCloud",
-    providerKey: "cc-switch-atlas-cloud",
+    providerKey: "bit2-switch-atlas-cloud",
     websiteUrl: "https://www.atlascloud.ai/console/coding-plan",
     apiKeyUrl: "https://www.atlascloud.ai/console/coding-plan",
     settingsConfig: {
@@ -958,7 +958,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "DeepSeek",
-    providerKey: "cc-switch-deep-seek",
+    providerKey: "bit2-switch-deep-seek",
     websiteUrl: "https://platform.deepseek.com",
     apiKeyUrl: "https://platform.deepseek.com/api_keys",
     settingsConfig: {
@@ -983,7 +983,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Zhipu GLM",
-    providerKey: "cc-switch-zhipu-glm",
+    providerKey: "bit2-switch-zhipu-glm",
     websiteUrl: "https://open.bigmodel.cn",
     apiKeyUrl: "https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII",
     settingsConfig: {
@@ -1003,7 +1003,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Zhipu GLM en",
-    providerKey: "cc-switch-zhipu-glm-en",
+    providerKey: "bit2-switch-zhipu-glm-en",
     websiteUrl: "https://z.ai",
     apiKeyUrl: "https://z.ai/subscribe?ic=8JVLJQFSKB",
     settingsConfig: {
@@ -1023,7 +1023,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "千问AI平台",
-    providerKey: "cc-switch-qianwenai",
+    providerKey: "bit2-switch-qianwenai",
     websiteUrl: "https://platform.qianwenai.com/?utm_content=g_20000002971",
     apiKeyUrl:
       "https://platform.qianwenai.com/home/api-keys?utm_content=g_20000002972",
@@ -1047,7 +1047,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "千问AI平台 Token Plan",
-    providerKey: "cc-switch-qianwenai-token-plan",
+    providerKey: "bit2-switch-qianwenai-token-plan",
     websiteUrl:
       "https://platform.qianwenai.com/pricing/token-plan?utm_content=g_20000002977",
     apiKeyUrl:
@@ -1078,7 +1078,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   // 按量付费与 Token Plan 都走 OpenAI 兼容层（/compatible-mode/v1）。
   {
     name: "QwenCloud",
-    providerKey: "cc-switch-qwencloud",
+    providerKey: "bit2-switch-qwencloud",
     websiteUrl: "https://home.qwencloud.com/?utm_content=g_20000002974",
     apiKeyUrl: "https://home.qwencloud.com/api-keys?utm_content=g_20000002975",
     settingsConfig: {
@@ -1107,7 +1107,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "QwenCloud For Coding",
-    providerKey: "cc-switch-qwencloud-coding",
+    providerKey: "bit2-switch-qwencloud-coding",
     websiteUrl: "https://www.qwencloud.com",
     apiKeyUrl: "https://home.qwencloud.com/api-keys",
     settingsConfig: {
@@ -1129,7 +1129,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "QwenCloud Token Plan",
-    providerKey: "cc-switch-qwencloud-token-plan",
+    providerKey: "bit2-switch-qwencloud-token-plan",
     websiteUrl:
       "https://www.qwencloud.com/pricing/token-plan?utm_content=g_20000002980",
     apiKeyUrl: "https://home.qwencloud.com/api-keys?utm_content=g_20000002981",
@@ -1160,7 +1160,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "StepFun",
-    providerKey: "cc-switch-step-fun",
+    providerKey: "bit2-switch-step-fun",
     websiteUrl: "https://platform.stepfun.com/step-plan",
     apiKeyUrl: "https://platform.stepfun.com/interface-key",
     settingsConfig: {
@@ -1184,7 +1184,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "StepFun en",
-    providerKey: "cc-switch-step-fun-en",
+    providerKey: "bit2-switch-step-fun-en",
     websiteUrl: "https://platform.stepfun.ai/step-plan",
     apiKeyUrl: "https://platform.stepfun.ai/interface-key",
     settingsConfig: {
@@ -1208,7 +1208,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "StepFun Step Plan",
-    providerKey: "cc-switch-step-fun-step-plan",
+    providerKey: "bit2-switch-step-fun-step-plan",
     websiteUrl: "https://platform.stepfun.com/docs/zh/step-plan/overview",
     apiKeyUrl: "https://platform.stepfun.com/interface-key",
     settingsConfig: {
@@ -1228,7 +1228,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "ModelScope",
-    providerKey: "cc-switch-model-scope",
+    providerKey: "bit2-switch-model-scope",
     websiteUrl: "https://modelscope.cn",
     apiKeyUrl: "https://modelscope.cn/my/myaccesstoken",
     settingsConfig: {
@@ -1248,7 +1248,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "KAT-Coder",
-    providerKey: "cc-switch-kat-coder",
+    providerKey: "bit2-switch-kat-coder",
     websiteUrl: "https://console.streamlake.ai",
     apiKeyUrl: "https://console.streamlake.ai/console/api-key",
     settingsConfig: {
@@ -1268,7 +1268,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Longcat",
-    providerKey: "cc-switch-longcat",
+    providerKey: "bit2-switch-longcat",
     websiteUrl: "https://longcat.chat/platform",
     apiKeyUrl: "https://longcat.chat/platform/api_keys",
     settingsConfig: {
@@ -1288,7 +1288,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "MiniMax",
-    providerKey: "cc-switch-mini-max",
+    providerKey: "bit2-switch-mini-max",
     websiteUrl: "https://platform.minimaxi.com",
     apiKeyUrl: "https://platform.minimaxi.com/subscribe/coding-plan",
     settingsConfig: {
@@ -1313,7 +1313,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "MiniMax en",
-    providerKey: "cc-switch-mini-max-en",
+    providerKey: "bit2-switch-mini-max-en",
     websiteUrl: "https://platform.minimax.io",
     apiKeyUrl: "https://platform.minimax.io/subscribe/coding-plan",
     settingsConfig: {
@@ -1338,7 +1338,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "BaiLing",
-    providerKey: "cc-switch-bai-ling",
+    providerKey: "bit2-switch-bai-ling",
     websiteUrl: "https://alipaytbox.yuque.com/sxs0ba/ling/get_started",
     settingsConfig: {
       name: "BaiLing",
@@ -1355,7 +1355,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Xiaomi MiMo",
-    providerKey: "cc-switch-xiaomi-mi-mo",
+    providerKey: "bit2-switch-xiaomi-mi-mo",
     websiteUrl: "https://platform.xiaomimimo.com",
     apiKeyUrl: "https://platform.xiaomimimo.com/#/console/api-keys",
     settingsConfig: {
@@ -1384,7 +1384,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Xiaomi MiMo Token Plan (China)",
-    providerKey: "cc-switch-xiaomi-mi-mo-token-plan-china",
+    providerKey: "bit2-switch-xiaomi-mi-mo-token-plan-china",
     websiteUrl: "https://platform.xiaomimimo.com/#/token-plan",
     apiKeyUrl: "https://platform.xiaomimimo.com/#/console/plan-manage",
     settingsConfig: {
@@ -1407,7 +1407,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "OpenCode Go",
-    providerKey: "cc-switch-open-code-go",
+    providerKey: "bit2-switch-open-code-go",
     websiteUrl: "https://opencode.ai/go",
     apiKeyUrl: "https://opencode.ai/go?ref=2YTRG2NGTX",
     settingsConfig: {
@@ -1459,7 +1459,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "AiHubMix",
-    providerKey: "cc-switch-ai-hub-mix",
+    providerKey: "bit2-switch-ai-hub-mix",
     websiteUrl: "https://aihubmix.com",
     apiKeyUrl: "https://aihubmix.com",
     settingsConfig: {
@@ -1482,7 +1482,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "CherryIN",
-    providerKey: "cc-switch-cherry-in",
+    providerKey: "bit2-switch-cherry-in",
     websiteUrl: "https://open.cherryin.ai",
     apiKeyUrl: "https://open.cherryin.ai/console/token",
     settingsConfig: {
@@ -1504,7 +1504,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "OpenRouter",
-    providerKey: "cc-switch-open-router",
+    providerKey: "bit2-switch-open-router",
     websiteUrl: "https://openrouter.ai",
     apiKeyUrl: "https://openrouter.ai/keys",
     settingsConfig: {
@@ -1527,7 +1527,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "TheRouter",
-    providerKey: "cc-switch-the-router",
+    providerKey: "bit2-switch-the-router",
     websiteUrl: "https://therouter.ai",
     apiKeyUrl: "https://dashboard.therouter.ai",
     settingsConfig: {
@@ -1557,7 +1557,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Novita AI",
-    providerKey: "cc-switch-novita-ai",
+    providerKey: "bit2-switch-novita-ai",
     websiteUrl: "https://novita.ai",
     apiKeyUrl: "https://novita.ai",
     settingsConfig: {
@@ -1577,7 +1577,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Nvidia",
-    providerKey: "cc-switch-nvidia",
+    providerKey: "bit2-switch-nvidia",
     websiteUrl: "https://build.nvidia.com",
     apiKeyUrl: "https://build.nvidia.com/settings/api-keys",
     settingsConfig: {
@@ -1597,7 +1597,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "PIPELLM",
-    providerKey: "cc-switch-pipellm",
+    providerKey: "bit2-switch-pipellm",
     websiteUrl: "https://code.pipellm.ai",
     apiKeyUrl: "https://code.pipellm.ai/login?ref=uvw650za",
     settingsConfig: {
@@ -1625,7 +1625,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "AICodeWith",
-    providerKey: "cc-switch-aicode-with",
+    providerKey: "bit2-switch-aicode-with",
     websiteUrl: "https://aicodewith.ai",
     apiKeyUrl: "https://aicodewith.ai/login?tab=register",
     settingsConfig: {
@@ -1646,7 +1646,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "E-FlowCode",
-    providerKey: "cc-switch-e-flow-code",
+    providerKey: "bit2-switch-e-flow-code",
     websiteUrl: "https://e-flowcode.cc",
     apiKeyUrl: "https://e-flowcode.cc",
     settingsConfig: {
@@ -1671,7 +1671,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "AWS Bedrock",
-    providerKey: "cc-switch-aws-bedrock",
+    providerKey: "bit2-switch-aws-bedrock",
     websiteUrl: "https://aws.amazon.com/bedrock/",
     settingsConfig: {
       name: "AWS Bedrock",
@@ -1713,7 +1713,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   // endpointCandidates 字段），需要第二地域的用户在 UI 中手动改 baseUrl。
   {
     name: "Tencent Token Plan",
-    providerKey: "cc-switch-tencent-token-plan",
+    providerKey: "bit2-switch-tencent-token-plan",
     websiteUrl: "https://cloud.tencent.com/product/tokenhub",
     apiKeyUrl: "https://console.cloud.tencent.com/tokenhub/tokenplan",
     settingsConfig: {
@@ -1753,7 +1753,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Tencent Token Plan (Intl)",
-    providerKey: "cc-switch-tencent-token-plan-intl",
+    providerKey: "bit2-switch-tencent-token-plan-intl",
     websiteUrl: "https://www.tencentcloud.com/products/tokenhub",
     apiKeyUrl: "https://console.tencentcloud.com/tokenhub/tokenplan",
     settingsConfig: {
@@ -1790,7 +1790,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Tencent Token Plan Enterprise Pro",
-    providerKey: "cc-switch-tencent-token-plan-enterprise-pro",
+    providerKey: "bit2-switch-tencent-token-plan-enterprise-pro",
     websiteUrl: "https://cloud.tencent.com/product/tokenhub",
     apiKeyUrl: "https://console.cloud.tencent.com/tokenhub/tokenplan-e",
     settingsConfig: {
@@ -1870,7 +1870,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Tencent Token Plan Enterprise Pro (Intl)",
-    providerKey: "cc-switch-tencent-token-plan-enterprise-pro-intl",
+    providerKey: "bit2-switch-tencent-token-plan-enterprise-pro-intl",
     websiteUrl: "https://www.tencentcloud.com/products/tokenhub",
     apiKeyUrl: "https://console.tencentcloud.com/tokenhub/tokenplan-e",
     settingsConfig: {
@@ -1945,7 +1945,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Tencent Token Plan Enterprise Lite",
-    providerKey: "cc-switch-tencent-token-plan-enterprise-lite",
+    providerKey: "bit2-switch-tencent-token-plan-enterprise-lite",
     websiteUrl: "https://cloud.tencent.com/product/tokenhub",
     apiKeyUrl: "https://console.cloud.tencent.com/tokenhub/tokenplan-e",
     settingsConfig: {
@@ -1961,7 +1961,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Tencent Token Plan Enterprise Lite (Intl)",
-    providerKey: "cc-switch-tencent-token-plan-enterprise-lite-intl",
+    providerKey: "bit2-switch-tencent-token-plan-enterprise-lite-intl",
     websiteUrl: "https://www.tencentcloud.com/products/tokenhub",
     apiKeyUrl: "https://console.tencentcloud.com/tokenhub/tokenplan-e",
     settingsConfig: {
@@ -1982,7 +1982,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   // 专用模型不收录（无法用于编码 agent）。
   {
     name: "Tencent TokenHub",
-    providerKey: "cc-switch-tencent-tokenhub",
+    providerKey: "bit2-switch-tencent-tokenhub",
     websiteUrl: "https://cloud.tencent.com/product/tokenhub",
     apiKeyUrl: "https://console.cloud.tencent.com/tokenhub/apikey",
     settingsConfig: {
@@ -2075,7 +2075,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   },
   {
     name: "Tencent TokenHub (Intl)",
-    providerKey: "cc-switch-tencent-tokenhub-intl",
+    providerKey: "bit2-switch-tencent-tokenhub-intl",
     websiteUrl: "https://www.tencentcloud.com/products/tokenhub",
     apiKeyUrl: "https://console.tencentcloud.com/tokenhub/apikey",
     settingsConfig: {

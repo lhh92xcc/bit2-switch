@@ -1,6 +1,6 @@
 //! Codex Responses ↔ OpenAI Chat Completions conversion.
 //!
-//! This module is used when the Codex client talks to CC Switch through the
+//! This module is used when the Codex client talks to bit2-switch through the
 //! Responses API, while the selected upstream provider only exposes an
 //! OpenAI-compatible Chat Completions endpoint.
 
@@ -2027,7 +2027,7 @@ pub(crate) fn chat_usage_to_responses_usage(usage: Option<&Value>) -> Value {
 }
 
 pub(crate) fn response_id_from_chat_id(id: Option<&str>) -> String {
-    let id = id.unwrap_or("ccswitch");
+    let id = id.unwrap_or("bit2switch");
     if id.starts_with("resp_") {
         id.to_string()
     } else {
@@ -3598,7 +3598,7 @@ mod tests {
 
         assert_eq!(
             messages[2]["content"][0]["text"],
-            "[cc-switch: media output of tool call call_image]"
+            "[bit2-switch: media output of tool call call_image]"
         );
         assert_eq!(messages[2]["content"][1]["type"], "image_url");
         assert_eq!(messages[2]["content"][1]["image_url"]["url"], data_url);
@@ -3975,7 +3975,7 @@ mod tests {
             serde_json::from_str(messages[1]["content"].as_str().unwrap()).unwrap();
         let rewritten = tool_item["output"].as_str().unwrap();
 
-        assert!(rewritten.contains("[cc-switch: omitted 20000 bytes]"));
+        assert!(rewritten.contains("[bit2-switch: omitted 20000 bytes]"));
         assert!(!rewritten.contains(&"A".repeat(64)));
         assert!(!rewritten.contains("CUSTOM_STRING_IMAGE_SENTINEL"));
         assert_eq!(messages[2]["content"][1]["type"], "image_url");
@@ -4424,7 +4424,7 @@ mod tests {
         assert!(tool_content[2]["data"]
             .as_str()
             .unwrap()
-            .starts_with("[cc-switch: omitted 20000 bytes]"));
+            .starts_with("[bit2-switch: omitted 20000 bytes]"));
         assert!(!tool_content_text.contains(&data_url));
         assert!(!tool_content_text.contains("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
     }
@@ -5032,7 +5032,7 @@ mod tests {
         assert_eq!(result["error"]["type"], "upstream_error");
     }
     // Regression tests for tool_choice without tools guard
-    // https://github.com/farion1231/cc-switch/issues/3557
+    // https://github.com/farion1231/bit2-switch/issues/3557
 
     #[test]
     fn responses_request_to_chat_drops_tool_choice_when_no_tools() {

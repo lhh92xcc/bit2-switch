@@ -13,7 +13,7 @@ use crate::error::AppError;
 /// - `dirs::home_dir()` 在 Windows 上使用 `SHGetKnownFolderPath(FOLDERID_Profile)`，
 ///   返回的是真实用户目录（类似 `C:\\Users\\Alice`），与 v3.10.2 行为一致。
 /// - 不要直接使用 `HOME` 环境变量：它可能由 Git/Cygwin/MSYS 等第三方工具注入，
-///   且不一定等于用户目录，可能导致 `.cc-switch/cc-switch.db` 路径变化，从而“看起来像数据丢失”。
+///   且不一定等于用户目录，可能导致 `.bit2-switch/bit2-switch.db` 路径变化，从而“看起来像数据丢失”。
 ///
 /// ## 测试隔离
 ///
@@ -199,27 +199,27 @@ pub fn get_claude_settings_path() -> PathBuf {
     settings
 }
 
-/// 获取应用配置目录路径 (~/.cc-switch)
+/// 获取应用配置目录路径 (~/.bit2-switch)
 pub fn get_app_config_dir() -> PathBuf {
     if let Some(custom) = crate::app_store::get_app_config_dir_override() {
         return custom;
     }
 
-    let default_dir = get_home_dir().join(".cc-switch");
+    let default_dir = get_home_dir().join(".bit2-switch");
 
     // 兼容 v3.10.3：当用户环境存在 `HOME` 且与真实用户目录不同，
-    // v3.10.3 可能在 `HOME/.cc-switch/` 下创建/使用了数据库。
+    // v3.10.3 可能在 `HOME/.bit2-switch/` 下创建/使用了数据库。
     // 这里仅在“默认位置没有数据库”时回退到旧位置，避免再次出现“供应商消失”问题，
     // 同时也避免新安装因为 `HOME` 被设置而写入非预期路径。
     #[cfg(windows)]
     {
-        let default_db = default_dir.join("cc-switch.db");
+        let default_db = default_dir.join("bit2-switch.db");
         if !default_db.exists() {
             if let Ok(home_env) = std::env::var("HOME") {
                 let trimmed = home_env.trim();
                 if !trimmed.is_empty() {
-                    let legacy_dir = PathBuf::from(trimmed).join(".cc-switch");
-                    if legacy_dir.join("cc-switch.db").exists() {
+                    let legacy_dir = PathBuf::from(trimmed).join(".bit2-switch");
+                    if legacy_dir.join("bit2-switch.db").exists() {
                         log::info!(
                             "Detected v3.10.3 legacy database at {}, using it instead of {}",
                             legacy_dir.display(),
@@ -233,6 +233,30 @@ pub fn get_app_config_dir() -> PathBuf {
     }
 
     default_dir
+}
+
+/// Migrate the old CC Switch database before opening the new database.
+pub fn migrate_legacy_app_config() -> Result<bool, String> {
+    let new_dir = get_home_dir().join(".bit2-switch");
+    let old_dir = get_home_dir().join(".cc-switch");
+    let old_db = old_dir.join("cc-switch.db");
+    let new_db = new_dir.join("bit2-switch.db");
+
+    if new_db.exists() || !old_db.exists() {
+        return Ok(false);
+    }
+
+    fs::create_dir_all(&new_dir).map_err(|e| format!("create bit2-switch directory: {e}"))?;
+    fs::copy(&old_db, &new_db).map_err(|e| format!("copy legacy database: {e}"))?;
+    for name in ["config.json", "settings.json"] {
+        let source = old_dir.join(name);
+        let target = new_dir.join(name);
+        if source.exists() && !target.exists() {
+            fs::copy(source, target).map_err(|e| format!("copy legacy {name}: {e}"))?;
+        }
+    }
+    log::info!("Migrated CC Switch data from {} to {}", old_dir.display(), new_dir.display());
+    Ok(true)
 }
 
 /// 获取应用配置文件路径

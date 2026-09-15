@@ -14,7 +14,11 @@ import { useSettingsQuery } from "@/lib/query";
 import { settingsApi } from "@/lib/api";
 
 /** 首次运行欢迎提示：仅当后端启动阶段保留 firstRunNoticeConfirmed 为空时弹出。 */
-export function FirstRunNoticeDialog() {
+export function FirstRunNoticeDialog({
+  onStartSetup,
+}: {
+  onStartSetup?: () => void;
+}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: settings } = useSettingsQuery();
@@ -32,6 +36,11 @@ export function FirstRunNoticeDialog() {
     } catch (error) {
       console.error("Failed to save firstRunNoticeConfirmed:", error);
     }
+  };
+
+  const handleStart = async () => {
+    await handleAcknowledge();
+    onStartSetup?.();
   };
 
   return (
@@ -52,14 +61,18 @@ export function FirstRunNoticeDialog() {
           <DialogDescription className="whitespace-pre-line leading-relaxed">
             {t("firstRunNotice.bodyDefault")}
           </DialogDescription>
-          <DialogDescription className="whitespace-pre-line leading-relaxed">
-            {t("firstRunNotice.bodyOfficial")}
-          </DialogDescription>
+          <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm leading-relaxed text-orange-950 dark:border-orange-900/50 dark:bg-orange-950/20 dark:text-orange-100">
+            <strong>bit2-switch 快速开始</strong>
+            <br />
+            选择 Claude Code 或 Codex → 选择服务商 → 填写 API Key → 保存并打开终端。
+            API 请求地址会自动填充。
+          </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleAcknowledge}>
+          <Button variant="outline" onClick={handleAcknowledge}>
             {t("firstRunNotice.confirm")}
           </Button>
+          <Button onClick={handleStart}>开始配置</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

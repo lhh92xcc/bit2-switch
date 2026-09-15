@@ -757,7 +757,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cc-switch"
+name = "bit2-switch"
 version = "3.20.3"
 dependencies = [
  "anyhow",

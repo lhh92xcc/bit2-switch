@@ -1,8 +1,10 @@
 <div align="center">
 
-# CC Switch
+# bit2-switch
 
-### Claude Code、Claude Desktop、Codex、Gemini CLI、Grok Build、OpenCode、OpenClaw 和 Hermes Agent 的全方位管理工具
+### 面向新手的 Claude Code、Codex 与 AI 编程工具配置中心
+
+bit2-switch 是基于 [CC Switch](https://github.com/farion1231/cc-switch) MIT 开源项目的修改发行版，由 bit2.ai 维护。上游版权和许可证信息保留在 [LICENSE](LICENSE) 与 [NOTICE.md](NOTICE.md)。
 
 [![Version](https://img.shields.io/github/v/release/farion1231/cc-switch?color=blue&label=version)](https://github.com/farion1231/cc-switch/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/farion1231/cc-switch/releases)

@@ -78,9 +78,9 @@ import {
 } from "./utils";
 
 const SESSION_LIST_VIEW_MODE_STORAGE_KEY =
-  "cc-switch.sessionManager.listViewMode";
+  "bit2-switch.sessionManager.listViewMode";
 const SESSION_GROUP_EXPANSION_STORAGE_KEY =
-  "cc-switch.sessionManager.groupExpansionState";
+  "bit2-switch.sessionManager.groupExpansionState";
 
 type ProviderFilter =
   | "all"
