@@ -53,19 +53,20 @@ export function FirstRunNoticeDialog({
       <DialogContent className="max-w-md" zIndex="top">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-blue-500" />
+            <Sparkles className="h-5 w-5 text-cyan-400" />
             {t("firstRunNotice.title")}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 px-6 py-5">
           <DialogDescription className="whitespace-pre-line leading-relaxed">
-            {t("firstRunNotice.bodyDefault")}
+            bit2-switch 为 Codex 提供账号连接、API 配置和本机运行环境检查。
+            你可以在控制台查看当前模型与端点，并管理供应商、设置和导入导出。
           </DialogDescription>
-          <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm leading-relaxed text-orange-950 dark:border-orange-900/50 dark:bg-orange-950/20 dark:text-orange-100">
+          <div className="rounded-lg border border-cyan-400/20 bg-cyan-400/5 p-3 text-sm leading-relaxed text-cyan-950 dark:border-cyan-400/20 dark:bg-cyan-400/5 dark:text-cyan-100">
             <strong>bit2-switch 快速开始</strong>
             <br />
-            选择 Claude Code 或 Codex → 选择服务商 → 填写 API Key → 保存并打开终端。
-            API 请求地址会自动填充。
+            连接 bit2.ai，或手动填写 API Key → 检测 Codex CLI → 在新终端中启动。
+            手动配置默认使用 bit2.ai API 地址，也支持兼容服务。
           </div>
         </div>
         <DialogFooter>

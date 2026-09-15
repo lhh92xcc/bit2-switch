@@ -101,6 +101,24 @@ pub fn reapply_current_codex_official_live(state: &AppState) -> Result<bool, App
     Ok(true)
 }
 
+/// Reference-backed Codex providers are selected in the app only. Their credentials
+/// and config are projected into a private launch snapshot, never the user's live files.
+pub(crate) fn is_keychain_codex_provider(app_type: &AppType, provider: &Provider) -> bool {
+    matches!(app_type, AppType::Codex) && provider.settings_config
+        .pointer("/auth/OPENAI_API_KEY").and_then(Value::as_str)
+        .is_some_and(|key| key.starts_with("keychain://") || key.starts_with("bit2-keychain://"))
+}
+
+pub(crate) fn select_keychain_codex_provider(state: &AppState, id: &str) -> Result<(), AppError> {
+    let previous = crate::settings::get_current_provider(&AppType::Codex);
+    crate::settings::set_current_provider(&AppType::Codex, Some(id))?;
+    if let Err(error) = state.db.set_current_provider("codex", id) {
+        let _ = crate::settings::set_current_provider(&AppType::Codex, previous.as_deref());
+        return Err(error);
+    }
+    Ok(())
+}
+
 /// Provider business logic service
 pub struct ProviderService;
 
@@ -974,6 +992,43 @@ mod tests {
             None,
         );
         db.save_provider("gemini", &unrelated).expect("save c");
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn keychain_codex_add_update_switch_preserve_live_config() {
+        let _home = TempHome::new();
+        crate::settings::reload_settings().unwrap();
+        let db = Arc::new(Database::memory().unwrap());
+        let state = AppState::new(db.clone());
+        let live_dir = crate::codex_config::get_codex_config_path().parent().unwrap().to_path_buf();
+        fs::create_dir_all(&live_dir).unwrap();
+        fs::write(live_dir.join("auth.json"), r#"{"OPENAI_API_KEY":"existing-live-key"}"#).unwrap();
+        fs::write(live_dir.join("config.toml"), "model = \"existing-model\"\n").unwrap();
+        let before_auth = fs::read(live_dir.join("auth.json")).unwrap();
+        let before_config = fs::read(live_dir.join("config.toml")).unwrap();
+        let mut provider = Provider::with_id("keychain-test".into(), "Keychain".into(), json!({
+            "auth": {"OPENAI_API_KEY": "keychain://bit2-switch/codex-api-key"},
+            "config": "model = \"gpt-5.2\"\nmodel_provider = \"bit2\"\n[model_providers.bit2]\nbase_url = \"https://bit2.ai/v1\"\nwire_api = \"responses\"\n"
+        }), None);
+        ProviderService::add(&state, AppType::Codex, provider.clone(), true).unwrap();
+        assert_eq!(fs::read(live_dir.join("auth.json")).unwrap(), before_auth);
+        assert_eq!(fs::read(live_dir.join("config.toml")).unwrap(), before_config);
+        provider.name = "Updated".into();
+        ProviderService::update(&state, AppType::Codex, None, provider.clone()).unwrap();
+        ProviderService::switch(&state, AppType::Codex, &provider.id).unwrap();
+        assert_eq!(db.get_current_provider("codex").unwrap().as_deref(), Some("keychain-test"));
+        assert_eq!(crate::settings::get_current_provider(&AppType::Codex).as_deref(), Some("keychain-test"));
+        assert_eq!(fs::read(live_dir.join("auth.json")).unwrap(), before_auth);
+        assert_eq!(fs::read(live_dir.join("config.toml")).unwrap(), before_config);
+        let regular = Provider::with_id("regular".into(), "Regular".into(), json!({
+            "auth": {"OPENAI_API_KEY": "ordinary-manual-key"},
+            "config": "model = \"gpt-5.2\"\nmodel_provider = \"regular\"\n[model_providers.regular]\nbase_url = \"https://regular.example/v1\"\nwire_api = \"responses\"\n"
+        }), None);
+        db.save_provider("codex", &regular).unwrap();
+        ProviderService::switch(&state, AppType::Codex, "regular").unwrap();
+        assert_eq!(db.get_provider_by_id(&provider.id, "codex").unwrap().unwrap().settings_config,
+            provider.settings_config, "switching away must not overwrite a Keychain provider with unrelated live config");
     }
 
     /// Saving the active provider while takeover has never been enabled must
@@ -5026,6 +5081,13 @@ impl ProviderService {
         // Normalize Claude model keys
         Self::normalize_provider_if_claude(&app_type, &mut provider);
         Self::validate_provider_settings(&app_type, &provider)?;
+        if is_keychain_codex_provider(&app_type, &provider) {
+            state.db.save_provider(app_type.as_str(), &provider)?;
+            if crate::settings::get_effective_current_provider(&state.db, &app_type)?.is_none() {
+                select_keychain_codex_provider(state, &provider.id)?;
+            }
+            return Ok(true);
+        }
         normalize_provider_common_config_for_storage(state.db.as_ref(), &app_type, &mut provider)?;
         Self::normalize_usage_script_credential_overrides(&app_type, &mut provider);
         if app_type.is_additive_mode() {
@@ -5162,6 +5224,13 @@ impl ProviderService {
         // Normalize Claude model keys
         Self::normalize_provider_if_claude(&app_type, &mut provider);
         Self::validate_provider_settings(&app_type, &provider)?;
+        if is_keychain_codex_provider(&app_type, &provider) {
+            if provider_id_changed {
+                return Err(AppError::Message("Codex provider ID cannot be changed".into()));
+            }
+            state.db.save_provider(app_type.as_str(), &provider)?;
+            return Ok(true);
+        }
         normalize_provider_common_config_for_storage(state.db.as_ref(), &app_type, &mut provider)?;
         if matches!(app_type, AppType::Codex) && provider.category.as_deref() == Some("official") {
             crate::codex_config::strip_codex_unified_session_bucket_from_settings(
@@ -5668,6 +5737,11 @@ impl ProviderService {
             None
         };
 
+        if is_keychain_codex_provider(&app_type, _provider) {
+            select_keychain_codex_provider(state, id)?;
+            return Ok(SwitchResult::default());
+        }
+
         // Backup or live placeholders mean the live file is owned by proxy
         // takeover, even if the proxy server is temporarily stopped or is in the
         // activation window before enabled=true is committed.
@@ -5765,7 +5839,9 @@ impl ProviderService {
             if current_id != id {
                 // Additive mode apps - all providers coexist in the same file,
                 // no backfill needed (backfill is for exclusive mode apps like Claude/Codex/Gemini)
-                if !app_type.is_additive_mode() {
+                if !app_type.is_additive_mode()
+                    && !providers.get(&current_id).is_some_and(|current| is_keychain_codex_provider(&app_type, current))
+                {
                     // Only backfill when switching to a different provider
                     if let Ok(live_config) = read_live_settings(app_type.clone()) {
                         if let Some(mut current_provider) = providers.get(&current_id).cloned() {
@@ -6026,6 +6102,10 @@ impl ProviderService {
         let Some(provider) = providers.get(&current_id) else {
             return Ok(());
         };
+
+        if is_keychain_codex_provider(&app_type, provider) {
+            return Ok(());
+        }
 
         let outcome = live::sync_live_for_provider_respecting_takeover(state, &app_type, provider)?;
         if outcome == LiveSyncOutcome::BackupOnly {

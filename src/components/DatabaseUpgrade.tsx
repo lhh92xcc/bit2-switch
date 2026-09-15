@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const RELEASES_URL = "https://github.com/farion1231/bit2-switch/releases";
+const RELEASES_URL = "https://github.com/lhh92xcc/bit2-switch/releases";
 
 interface DatabaseUpgradeProps {
   payload: {

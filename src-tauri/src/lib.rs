@@ -1,6 +1,7 @@
 mod app_config;
 mod app_store;
 mod auto_launch;
+mod bit2_api;
 mod claude_desktop_config;
 mod claude_mcp;
 mod claude_plugin;
@@ -8,8 +9,7 @@ mod codex_config;
 mod codex_history_migration;
 mod codex_state_db;
 mod commands;
-mod bit2_api;
-pub use bit2_api::{bit2_login, bit2_logout};
+pub use bit2_api::bit2_logout;
 mod config;
 mod database;
 mod deeplink;
@@ -256,7 +256,16 @@ fn handle_deeplink_url(
     }
 
     if url_str.starts_with("bit2switch://auth") {
-        let _ = app.emit("bit2-auth-callback", url_str.to_string());
+        let app_handle = app.clone();
+        let callback = url_str.to_string();
+        tauri::async_runtime::spawn(async move {
+            if let Err(error) =
+                crate::bit2_api::handle_auth_callback(app_handle.clone(), callback).await
+            {
+                log::warn!("bit2.ai authentication callback failed: {error}");
+                let _ = app_handle.emit("bit2-auth-error", error);
+            }
+        });
         return true;
     }
 
@@ -1632,9 +1641,10 @@ pub fn run() {
             commands::get_tool_versions,
             commands::run_tool_lifecycle_action,
             commands::store_bit2_secret,
-            bit2_api::bit2_login,
+            bit2_api::bit2_open_login_window,
+            bit2_api::bit2_status,
+            bit2_api::bit2_cancel_login,
             bit2_api::bit2_logout,
-            bit2_api::open_bit2_login,
             commands::probe_tool_installations,
             // Provider terminal
             commands::open_provider_terminal,
@@ -1829,41 +1839,7 @@ pub fn run() {
                                 }
                             }
 
-                            // 解析并广播深链接事件，复用与 single_instance 相同的逻辑
-                            match crate::deeplink::parse_deeplink_url(&url_str) {
-                                Ok(request) => {
-                                    log::info!(
-                                        "Successfully parsed deep link from RunEvent::Opened: resource={}, app={:?}",
-                                        request.resource,
-                                        request.app
-                                    );
-
-                                    if let Err(e) =
-                                        app_handle.emit("deeplink-import", &request)
-                                    {
-                                        log::error!(
-                                            "Failed to emit deep link event from RunEvent::Opened: {e}"
-                                        );
-                                    }
-                                }
-                                Err(e) => {
-                                    log::error!(
-                                        "Failed to parse deep link URL from RunEvent::Opened: {e}"
-                                    );
-
-                                    if let Err(emit_err) = app_handle.emit(
-                                        "deeplink-error",
-                                        serde_json::json!({
-                                            "url": url_str,
-                                            "error": e.to_string()
-                                        }),
-                                    ) {
-                                        log::error!(
-                                            "Failed to emit deep link error event from RunEvent::Opened: {emit_err}"
-                                        );
-                                    }
-                                }
-                            }
+                            handle_deeplink_url(app_handle, &url_str, true, "RunEvent::Opened");
 
                             // 确保主窗口可见
                             if let Some(window) = app_handle.get_webview_window("main") {

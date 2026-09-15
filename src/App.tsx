@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import bit2Mark from "@/assets/icons/bit2-mark.svg";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -29,11 +30,12 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { Provider, VisibleApps } from "@/types";
+import type { Provider } from "@/types";
 import type { EnvConflict } from "@/types/env";
 import { proxyKeys, useProvidersQuery, useSettingsQuery } from "@/lib/query";
 import {
   piApi,
+  bit2Api,
   providersApi,
   settingsApi,
   type AppId,
@@ -62,7 +64,6 @@ import {
   DRAG_REGION_ATTR,
   DRAG_REGION_STYLE,
 } from "@/lib/platform";
-import { AppSwitcher } from "@/components/AppSwitcher";
 import { ProfileSwitcher } from "@/components/profiles/ProfileSwitcher";
 import { ProviderList } from "@/components/providers/ProviderList";
 import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
@@ -74,7 +75,6 @@ import { EnvWarningBanner } from "@/components/env/EnvWarningBanner";
 import { ProxyToggle } from "@/components/proxy/ProxyToggle";
 import { ClaudeDesktopRouteToggle } from "@/components/proxy/ClaudeDesktopRouteToggle";
 import { FailoverToggle } from "@/components/proxy/FailoverToggle";
-import { RoutingActivationBrand } from "@/components/proxy/RoutingActivationBrand";
 import UsageScriptModal from "@/components/UsageScriptModal";
 import UnifiedMcpPanel from "@/components/mcp/UnifiedMcpPanel";
 import PromptPanel, {
@@ -93,6 +93,7 @@ import { DeepLinkImportDialog } from "@/components/DeepLinkImportDialog";
 import { FirstRunNoticeDialog } from "@/components/FirstRunNoticeDialog";
 import { QuickSetupDialog } from "@/components/QuickSetupDialog";
 import { Bit2LoginDialog } from "@/components/Bit2LoginDialog";
+import { CodexConsole, type CodexCliStatus } from "@/components/CodexConsole";
 import { AgentsPanel } from "@/components/agents/AgentsPanel";
 import { UniversalProviderPanel } from "@/components/universal";
 import { McpIcon } from "@/components/BrandIcons";
@@ -110,14 +111,11 @@ import AgentsDefaultsPanel from "@/components/openclaw/AgentsDefaultsPanel";
 import OpenClawHealthBanner from "@/components/openclaw/OpenClawHealthBanner";
 import HermesMemoryPanel from "@/components/hermes/HermesMemoryPanel";
 import { listen } from "@tauri-apps/api/event";
-import {
-  APP_IDS,
-  DEFAULT_VISIBLE_APPS,
-  isProxyAppId,
-} from "@/config/appConfig";
+import { isProxyAppId } from "@/config/appConfig";
 
 type View =
   | "providers"
+  | "library"
   | "settings"
   | "prompts"
   | "skills"
@@ -141,18 +139,14 @@ interface SyncStatusUpdatedPayload {
 const DEFAULT_DRAG_BAR_HEIGHT = isWindows() || isLinux() ? 0 : 28; // px
 const HEADER_HEIGHT = 64; // px
 
-const STORAGE_KEY = "bit2-switch-last-app";
 const getInitialApp = (): AppId => {
-  const saved = localStorage.getItem(STORAGE_KEY) as AppId | null;
-  if (saved && APP_IDS.includes(saved)) {
-    return saved;
-  }
-  return "claude";
+  return "codex";
 };
 
 const VIEW_STORAGE_KEY = "bit2-switch-last-view";
 const VALID_VIEWS: View[] = [
   "providers",
+  "library",
   "settings",
   "prompts",
   "skills",
@@ -190,6 +184,13 @@ function App() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isQuickSetupOpen, setIsQuickSetupOpen] = useState(false);
   const [isBit2LoginOpen, setIsBit2LoginOpen] = useState(false);
+  const [bit2Status, setBit2Status] = useState<{
+    connected: boolean;
+    baseUrl: string;
+  } | null>(null);
+  const [codexCliStatus, setCodexCliStatus] = useState<CodexCliStatus>({
+    state: "checking",
+  });
   const [isWindowMaximized, setIsWindowMaximized] = useState(false);
   const [mcpManagementBusy, setMcpManagementBusy] = useState(false);
   const [skillsManagementBusy, setSkillsManagementBusy] = useState(false);
@@ -207,36 +208,80 @@ function App() {
   }, [currentView]);
 
   useEffect(() => {
-    let dispose: (() => void) | undefined;
-    void listen<string>("bit2-auth-callback", () => {
+    const refreshStatus = async () => {
+      try {
+        const status = await bit2Api.status();
+        setBit2Status({
+          connected: status.connected,
+          baseUrl: status.baseUrl ?? "https://bit2.ai",
+        });
+      } catch (error) {
+        console.error("[App] Failed to read bit2.ai status", error);
+        setBit2Status(null);
+      }
+    };
+    void refreshStatus();
+
+    let disposeSuccess: (() => void) | undefined;
+    let disposeError: (() => void) | undefined;
+    void listen("bit2-auth-success", () => {
       setIsBit2LoginOpen(false);
-      toast.success("bit2.ai 登录完成，请点击同步 Codex");
-    }).then((fn) => { dispose = fn; });
-    return () => dispose?.();
+      toast.success("bit2.ai 已连接，Codex 配置已同步");
+      void refreshStatus();
+      void queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
+    }).then((fn) => {
+      disposeSuccess = fn;
+    });
+    void listen<string>("bit2-auth-error", (event) => {
+      toast.error("bit2.ai 登录失败", { description: event.payload });
+      void refreshStatus();
+    }).then((fn) => {
+      disposeError = fn;
+    });
+    return () => {
+      disposeSuccess?.();
+      disposeError?.();
+    };
+  }, [queryClient]);
+
+  const refreshCodexCli = useCallback(async () => {
+    setCodexCliStatus({ state: "checking" });
+    try {
+      const [status] = await settingsApi.getToolVersions(["codex"]);
+      const next: CodexCliStatus =
+        status?.error || status?.installed_but_broken
+          ? { state: "error", message: status.error ?? "Codex CLI 需要修复" }
+          : status?.version
+            ? { state: "ready", version: status.version }
+            : { state: "missing" };
+      setCodexCliStatus(next);
+      return next.state === "ready";
+    } catch {
+      setCodexCliStatus({
+        state: "error",
+        message: "检测失败，请重试或打开 CLI 设置",
+      });
+      return false;
+    }
   }, []);
+
+  useEffect(() => {
+    void refreshCodexCli();
+    const refresh = () => {
+      void refreshCodexCli();
+    };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [refreshCodexCli, currentView]);
 
   const { data: settingsData } = useSettingsQuery();
   const useAppWindowControls =
     isLinux() && (settingsData?.useAppWindowControls ?? false);
   const dragBarHeight = useAppWindowControls ? 32 : DEFAULT_DRAG_BAR_HEIGHT;
   const contentTopOffset = dragBarHeight + HEADER_HEIGHT;
-  const visibleApps = useMemo<VisibleApps>(
-    () => ({
-      ...DEFAULT_VISIBLE_APPS,
-      ...settingsData?.visibleApps,
-    }),
-    [settingsData?.visibleApps],
-  );
-
-  const getFirstVisibleApp = (): AppId => {
-    return APP_IDS.find((app) => visibleApps[app]) ?? "claude";
-  };
-
   useEffect(() => {
-    if (!visibleApps[activeApp]) {
-      setActiveApp(getFirstVisibleApp());
-    }
-  }, [visibleApps, activeApp]);
+    if (activeApp !== "codex") setActiveApp("codex");
+  }, [activeApp]);
 
   // Fallback from sessions view when switching to an app without session support
   useEffect(() => {
@@ -954,14 +999,19 @@ function App() {
     }
   };
 
-  const handleQuickSetup = async (app: "claude" | "codex", provider: Provider) => {
+  const handleQuickSetup = async (
+    app: "claude" | "codex",
+    provider: Provider,
+  ) => {
     await providersApi.add(provider, app, true);
     await providersApi.switch(provider.id, app);
     await providersApi.openTerminal(provider.id, app);
     await queryClient.invalidateQueries({ queryKey: ["providers"] });
     setActiveApp(app);
     setCurrentView("providers");
-    toast.success(`${app === "claude" ? "Claude Code" : "Codex"} 配置已保存，终端已打开`);
+    toast.success(
+      `${app === "claude" ? "Claude Code" : "Codex"} 配置已保存，终端已打开`,
+    );
   };
 
   const handleImportSuccess = async () => {
@@ -1028,9 +1078,72 @@ function App() {
     setCurrentView("skillsDiscovery");
   };
 
+  const [launchingCodex, setLaunchingCodex] = useState(false);
+
+  const handleLaunchCodex = async () => {
+    const provider = providers[currentProviderId];
+    if (!provider || launchingCodex) return;
+    setLaunchingCodex(true);
+    try {
+      if (!(await refreshCodexCli())) {
+        toast.info("正在安装 Codex CLI，完成后会再次检测");
+        await settingsApi.runToolLifecycleAction(["codex"], "install");
+        if (!(await refreshCodexCli())) {
+          toast.error("安装后仍未检测到可用的 Codex CLI，请打开设置检查后重试");
+          return;
+        }
+      }
+      await providersApi.openTerminal(provider.id, "codex");
+      toast.success("已打开新的 Codex 终端");
+    } catch (error) {
+      toast.error("无法启动 Codex", {
+        description: extractErrorMessage(error),
+      });
+    } finally {
+      setLaunchingCodex(false);
+    }
+  };
+
+  const handleBit2Logout = async () => {
+    try {
+      await bit2Api.logout();
+      await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
+      setBit2Status((current) => ({
+        connected: false,
+        baseUrl: current?.baseUrl ?? "https://bit2.ai",
+      }));
+      toast.success("已退出 bit2.ai");
+    } catch (error) {
+      toast.error("退出失败", { description: extractErrorMessage(error) });
+    }
+  };
+
   const renderContent = () => {
     const content = (() => {
       switch (currentView) {
+        case "providers":
+          return (
+            <CodexConsole
+              authStatus={bit2Status}
+              provider={providers[currentProviderId]}
+              cliStatus={codexCliStatus}
+              launching={launchingCodex}
+              onRefreshCli={() => void refreshCodexCli()}
+              onConnect={() => setIsBit2LoginOpen(true)}
+              onLogout={() => void handleBit2Logout()}
+              onLaunch={() => void handleLaunchCodex()}
+              onAddProvider={() => setIsQuickSetupOpen(true)}
+              onOpenProviders={() => setCurrentView("library")}
+              onOpenSettings={() => {
+                setSettingsDefaultTab("general");
+                setCurrentView("settings");
+              }}
+              onOpenAbout={() => {
+                setSettingsDefaultTab("about");
+                setCurrentView("settings");
+              }}
+            />
+          );
         case "settings":
           return (
             <SettingsPage
@@ -1111,6 +1224,7 @@ function App() {
           return <ToolsPanel />;
         case "openclawAgents":
           return <AgentsDefaultsPanel />;
+        case "library":
         default:
           return (
             <div className="px-6 flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -1186,18 +1300,12 @@ function App() {
     })();
 
     return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentView}
-          className="flex-1 min-h-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          {content}
-        </motion.div>
-      </AnimatePresence>
+      <div
+        key={currentView}
+        className="flex h-full min-h-0 flex-col overflow-hidden"
+      >
+        {content}
+      </div>
     );
   };
 
@@ -1206,11 +1314,6 @@ function App() {
       className="flex flex-col h-screen overflow-hidden bg-background text-foreground selection:bg-primary/30 pb-4"
       style={{ overflowX: "hidden", paddingTop: contentTopOffset }}
     >
-      <div className="bit2-brandbar" data-tauri-drag-region>
-        <div className="bit2-brandmark"><span>↗</span></div>
-        <div><div className="bit2-brandname">bit2-switch</div><div className="bit2-brandtag">AI TOOL CONTROL CENTER</div></div>
-        <div className="bit2-live"><i /> LIVE WORKSPACE</div>
-      </div>
       {(dragBarHeight > 0 || useAppWindowControls) && (
         <div
           className="fixed top-0 left-0 right-0 z-[70] flex items-center justify-end px-2"
@@ -1329,6 +1432,7 @@ function App() {
                 </Button>
                 <h1 className="text-lg font-semibold">
                   {currentView === "settings" && t("settings.title")}
+                  {currentView === "library" && "Codex 供应商"}
                   {currentView === "prompts" &&
                     t("prompts.title", {
                       appName: t(`apps.${sharedFeatureApp}`),
@@ -1352,13 +1456,13 @@ function App() {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <RoutingActivationBrand
-                  active={isProxyRunning && isCurrentAppTakeoverActive}
-                  contextKey={activeApp}
-                  ready={
-                    proxyStatus !== undefined && takeoverStatus !== undefined
-                  }
-                />
+                <div className="flex shrink-0 items-center gap-3 mr-3">
+                  <img src={bit2Mark} alt="" className="h-9 w-9 rounded-xl" />
+                  <div>
+                    <div className="bit2-brandname">bit2-switch</div>
+                    <div className="bit2-brandtag">CODEX WORKSPACE</div>
+                  </div>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -1398,7 +1502,7 @@ function App() {
           </div>
 
           <div className="flex flex-1 min-w-0 items-center justify-end gap-1.5">
-            {currentView === "providers" &&
+            {currentView === "library" &&
               (activeApp === "claude-desktop" || proxyAppId) && (
                 <div
                   className="flex shrink-0 items-center gap-1.5"
@@ -1418,7 +1522,7 @@ function App() {
                   ) : null}
                 </div>
               )}
-            {currentView === "providers" &&
+            {currentView === "library" &&
               (settingsData?.showProfileSwitcher ?? true) && (
                 <div
                   className="flex shrink-0 items-center"
@@ -1430,12 +1534,10 @@ function App() {
             {/* 弹性中段：空间不足时由 AppSwitcher 自行收纳溢出应用；
                 justify-end + overflow-hidden 只裁剪 resize 瞬间的过渡帧 */}
             <div className="flex flex-1 min-w-0 items-center justify-end overflow-hidden py-4">
-              {currentView === "providers" && (
-                <AppSwitcher
-                  activeApp={activeApp}
-                  onSwitch={setActiveApp}
-                  visibleApps={visibleApps}
-                />
+              {currentView === "library" && (
+                <span className="text-xs font-medium text-muted-foreground">
+                  CODEX PROVIDERS
+                </span>
               )}
             </div>
             {/* 固定右端：主操作（添加供应商等）shrink-0，任何配置下不被挤出 */}
@@ -1444,7 +1546,14 @@ function App() {
                 className="flex shrink-0 items-center gap-1.5"
                 style={{ WebkitAppRegion: "no-drag" } as any}
               >
-                <Button variant="outline" size="sm" onClick={() => setIsBit2LoginOpen(true)} className="mr-2 border-primary/40 text-primary">连接 bit2.ai</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsBit2LoginOpen(true)}
+                  className="mr-2 border-primary/40 text-primary"
+                >
+                  连接 bit2.ai
+                </Button>
                 {currentView === "prompts" && promptPrimaryAction && (
                   <Button
                     variant="ghost"
@@ -1591,7 +1700,7 @@ function App() {
                     )}
                   </>
                 )}
-                {currentView === "providers" && (
+                {currentView === "library" && (
                   <>
                     <div className="flex items-center gap-1 p-1 bg-muted rounded-xl">
                       <AnimatePresence mode="wait">
@@ -1775,7 +1884,10 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 flex flex-col overflow-y-auto animate-fade-in">
+      <main
+        className="fixed inset-x-0 bottom-0 flex min-h-0 flex-col overflow-hidden"
+        style={{ top: contentTopOffset }}
+      >
         {isOpenClawView && openclawHealthWarnings.length > 0 && (
           <OpenClawHealthBanner warnings={openclawHealthWarnings} />
         )}
@@ -1862,7 +1974,10 @@ function App() {
         onOpenChange={setIsQuickSetupOpen}
         onComplete={handleQuickSetup}
       />
-      <Bit2LoginDialog open={isBit2LoginOpen} onOpenChange={setIsBit2LoginOpen} onSuccess={() => { toast.success("bit2.ai 登录成功"); void queryClient.invalidateQueries(); }} />
+      <Bit2LoginDialog
+        open={isBit2LoginOpen}
+        onOpenChange={setIsBit2LoginOpen}
+      />
     </div>
   );
 }

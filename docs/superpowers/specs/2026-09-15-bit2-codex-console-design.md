@@ -10,9 +10,9 @@ The first product release exposes Codex only. Existing provider switching, impor
 
 ## Bit2.ai authentication and sync
 
-The desktop app opens an embedded bit2.ai login webview. The webview supports the server's existing username/password, 2FA, and Passkey flows without reimplementing authentication. A callback bridge returns only a short-lived session result to Rust. Rust stores the session securely in macOS Keychain.
+The desktop app opens the bit2.ai authorization page in the system browser. The website supports the server's existing username/password, 2FA, and Passkey flows without reimplementing authentication. A one-time authorization code returns to Rust via the exact registered callback URI. Rust validates pending state and exchanges the code using S256 PKCE. The native macOS Keychain stores the exported inference API key. Desktop access never uses a management PAT or guessed password-login response headers.
 
-After authentication, Rust calls the bit2-api user token and token-management endpoints over HTTPS. It obtains the user's Codex API credential and derives the API URL as the configured bit2.ai origin plus `/v1`. The credential is stored only in Keychain. The local provider record contains a Keychain reference and non-secret metadata. Sync refreshes the provider, switches it active, and reports token expiry or permission errors with a re-login action.
+The website requires explicit selection and consent for an existing API token. The desktop provider record contains only a Keychain reference and non-secret metadata. The API URL is fixed to the verified bit2.ai `/v1` gateway. See [desktop auth contract](../../bit2-desktop-auth-contract.md) for request fields and revocation semantics.
 
 ## UI architecture
 
@@ -21,14 +21,14 @@ Replace the multi-tool switcher as the primary shell with a Codex workspace: top
 ## Data flow
 
 1. User selects “Connect bit2.ai”.
-2. Embedded webview completes login and returns a session.
-3. Rust validates the session, stores it in Keychain, and requests/refreshes the Codex token.
-4. Rust writes a non-secret Codex provider reference, switches it active, and resolves the CLI installation.
-5. Launch reads the Keychain secret at runtime, injects it into the Codex process, and never logs it.
+2. System browser completes website login and explicit token consent.
+3. Rust verifies callback state and PKCE exchange, then saves the key in Keychain.
+4. Rust saves/selects the managed provider without replacing global Codex auth files.
+5. Launch checks/installs the CLI, creates a private selected-configuration snapshot and supplies the Keychain key to the process environment.
 
 ## Error handling and security
 
-All network calls use HTTPS, bounded response bodies, timeouts, and redacted logs. Session and API credentials are never placed in URLs, command arguments, ordinary JSON settings, or telemetry. Logout revokes/forgets the local session and removes the Keychain item. If the API token endpoint is unavailable, the existing manually configured Codex provider remains usable.
+All network calls use HTTPS, bounded response bodies, timeouts, and redacted logs. Session and API credentials are never placed in URLs, command arguments, ordinary JSON settings, or telemetry. Desktop disconnect removes the local Keychain item; website API-token revocation remains a separate explicit website action. If the API token endpoint is unavailable, the existing manually configured Codex provider remains usable.
 
 ## Validation and release
 

@@ -78,6 +78,7 @@ indexmap = { version = "2", features = ["serde"] }
 rust_decimal = "1.33"
 uuid = { version = "1.11", features = ["v4"] }
 sha2 = "0.10"
+rand = "0.8"
 hmac = "0.12"
 json5 = "0.4"
 json-five = "0.3.1"
@@ -106,6 +107,7 @@ rquickjs = { version = "0.8", features = ["bindgen"] }
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.5"
 objc2-app-kit = { version = "0.2", features = ["NSColor"] }
+security-framework = "3"
 
 # Optimize release binary size to help reduce AppImage footprint
 [profile.release]

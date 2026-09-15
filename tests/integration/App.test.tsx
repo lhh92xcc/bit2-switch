@@ -3,12 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { http, HttpResponse } from "msw";
-import { providersApi } from "@/lib/api/providers";
 import {
   resetProviderState,
   setCurrentProviderId,
-  setLiveProviderIds,
   setProviders,
+  setSettings,
 } from "../msw/state";
 import { emitTauriEvent } from "../msw/tauriMocks";
 import { server } from "../msw/server";
@@ -188,37 +187,43 @@ vi.mock("@/components/mcp/McpPanel", () => ({
 
 const renderApp = (AppComponent: ComponentType) => {
   const client = new QueryClient();
-  return render(
+  const result = render(
     <QueryClientProvider client={client}>
       <Suspense fallback={<div data-testid="loading">loading</div>}>
         <AppComponent />
       </Suspense>
     </QueryClientProvider>,
   );
+  return { ...result, client };
 };
 
 describe("App integration with MSW", () => {
   beforeEach(() => {
     resetProviderState();
+    setSettings({ firstRunNoticeConfirmed: true });
+    server.use(
+      http.post("http://tauri.local/bit2_status", () =>
+        HttpResponse.json({ connected: false }),
+      ),
+      http.post("http://tauri.local/get_tool_versions", () =>
+        HttpResponse.json([{ tool: "codex", version: "1.2.3" }]),
+      ),
+    );
     toastSuccessMock.mockReset();
     toastErrorMock.mockReset();
     skillsPanelMocks.checkUpdates.mockReset();
     skillsPanelMocks.openDiscovery.mockReset();
-    localStorage.removeItem("cc-switch-last-view");
-    localStorage.removeItem("cc-switch-last-app");
+    localStorage.removeItem("bit2-switch-last-view");
+    localStorage.removeItem("bit2-switch-last-app");
   });
 
   it("covers basic provider flows via real hooks", async () => {
     const { default: App } = await import("@/App");
     renderApp(App);
 
-    await waitFor(() =>
-      expect(screen.getByTestId("provider-list").textContent).toContain(
-        "claude-1",
-      ),
-    );
-
-    fireEvent.click(screen.getByText("switch-codex"));
+    expect(await screen.findByText("Codex Default")).toBeInTheDocument();
+    expect(screen.queryByTestId("app-switcher")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "管理供应商" }));
     await waitFor(() =>
       expect(screen.getByTestId("provider-list").textContent).toContain(
         "codex-1",
@@ -269,11 +274,7 @@ describe("App integration with MSW", () => {
     const { default: App } = await import("@/App");
     renderApp(App);
 
-    await waitFor(() =>
-      expect(screen.getByTestId("provider-list").textContent).toContain(
-        "claude-1",
-      ),
-    );
+    expect(await screen.findByText("Codex Default")).toBeInTheDocument();
 
     expect(() => {
       emitTauriEvent("webdav-sync-status-updated", null);
@@ -307,144 +308,71 @@ describe("App integration with MSW", () => {
     });
   });
 
-  it("duplicates openclaw providers with a generated key that avoids live-only ids", async () => {
-    setProviders("openclaw", {
-      deepseek: {
-        id: "deepseek",
-        name: "DeepSeek",
-        settingsConfig: {
-          baseUrl: "https://api.deepseek.com",
-          apiKey: "test-key",
-          api: "openai-completions",
-          models: [],
-        },
-        category: "custom",
-        sortIndex: 0,
-        createdAt: Date.now(),
-      },
-    });
-    setCurrentProviderId("openclaw", "deepseek");
-    setLiveProviderIds("openclaw", ["deepseek-copy"]);
-
+  it("opens Codex regardless of an obsolete multi-tool preference", async () => {
+    localStorage.setItem("bit2-switch-last-app", "pi");
     const { default: App } = await import("@/App");
     renderApp(App);
-
-    fireEvent.click(screen.getByText("switch-openclaw"));
-
-    await waitFor(() =>
-      expect(screen.getByTestId("provider-list").textContent).toContain(
-        "deepseek",
-      ),
+    expect(await screen.findByText("Codex Default")).toBeInTheDocument();
+    expect(screen.queryByTestId("app-switcher")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "管理供应商" }));
+    expect(await screen.findByTestId("provider-list")).toHaveTextContent(
+      "codex-1",
     );
-
-    fireEvent.click(screen.getByText("duplicate"));
-
-    await waitFor(() => {
-      const providerList = screen.getByTestId("provider-list").textContent;
-      expect(providerList).toContain("deepseek-copy-2");
-      expect(providerList).toContain("DeepSeek copy");
-    });
-
-    expect(toastErrorMock).not.toHaveBeenCalledWith(
-      expect.stringContaining("Provider key is required for openclaw"),
+    expect(screen.getByTestId("provider-list")).not.toHaveTextContent(
+      "claude-1",
     );
   });
 
-  it("warns without blocking when removing Pi's global default provider", async () => {
-    localStorage.setItem("cc-switch-last-app", "pi");
-    setProviders("pi", {
-      custom: {
-        id: "custom",
-        name: "Custom Pi",
-        settingsConfig: {
-          baseUrl: "https://api.example.com/v1",
-          apiKey: "test-key",
-          api: "openai-completions",
-          models: [{ id: "model-a" }],
-        },
-        category: "custom",
-        sortIndex: 0,
-        createdAt: Date.now(),
-      },
-    });
+  it("refreshes providers after verified bit2 logout removes the managed provider", async () => {
     server.use(
-      http.post("http://tauri.local/get_pi_current_state", () =>
-        HttpResponse.json({
-          enabledProviderIds: ["custom"],
-          defaultProviderId: "custom",
-        }),
+      http.post("http://tauri.local/bit2_status", () =>
+        HttpResponse.json({ connected: true, baseUrl: "https://bit2.ai" }),
       ),
+      http.post("http://tauri.local/bit2_logout", () => {
+        setProviders("codex", {});
+        setCurrentProviderId("codex", "");
+        return HttpResponse.json(null);
+      }),
     );
-
     const { default: App } = await import("@/App");
-    renderApp(App);
-
+    const { client } = renderApp(App);
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    expect(await screen.findByText("已连接 bit2.ai")).toBeInTheDocument();
+    expect(await screen.findByText("Codex Default")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "退出" }));
     await waitFor(() =>
-      expect(screen.getByTestId("provider-list").textContent).toContain(
-        "Custom Pi",
-      ),
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: ["providers", "codex"],
+      }),
     );
-    fireEvent.click(screen.getByText("remove"));
-
-    expect(screen.getByTestId("confirm-message")).toHaveTextContent(
-      "confirm.piDefaultProviderWarning",
-    );
-    fireEvent.click(screen.getByText("confirm-delete"));
+    expect(await screen.findByText("尚未连接")).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument(),
+      expect(screen.queryByText("Codex Default")).not.toBeInTheDocument(),
     );
   });
 
-  it("shows toast when duplicate cannot load live provider ids", async () => {
-    setProviders("openclaw", {
-      deepseek: {
-        id: "deepseek",
-        name: "DeepSeek",
-        settingsConfig: {
-          baseUrl: "https://api.deepseek.com",
-          apiKey: "test-key",
-          api: "openai-completions",
-          models: [],
-        },
-        category: "custom",
-        sortIndex: 0,
-        createdAt: Date.now(),
-      },
-    });
-    setCurrentProviderId("openclaw", "deepseek");
-
-    const liveIdsSpy = vi
-      .spyOn(providersApi, "getOpenClawLiveProviderIds")
-      .mockRejectedValueOnce(new Error("broken config"));
-
+  it("ignores raw auth callbacks and refreshes only verified success", async () => {
     const { default: App } = await import("@/App");
-    renderApp(App);
-
-    fireEvent.click(screen.getByText("switch-openclaw"));
-
-    await waitFor(() =>
-      expect(screen.getByTestId("provider-list").textContent).toContain(
-        "deepseek",
+    const { client } = renderApp(App);
+    expect(await screen.findByText("尚未连接")).toBeInTheDocument();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    emitTauriEvent("bit2-auth-callback", "unverified-callback");
+    expect(toastSuccessMock).not.toHaveBeenCalled();
+    expect(screen.getByText("尚未连接")).toBeInTheDocument();
+    server.use(
+      http.post("http://tauri.local/bit2_status", () =>
+        HttpResponse.json({ connected: true, baseUrl: "https://bit2.ai" }),
       ),
     );
-
-    fireEvent.click(screen.getByText("duplicate"));
-
-    await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith(
-        expect.stringContaining("读取配置中的供应商标识失败"),
-      );
+    emitTauriEvent("bit2-auth-success", null);
+    expect(await screen.findByText("已连接 bit2.ai")).toBeInTheDocument();
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ["providers", "codex"],
     });
-
-    expect(screen.getByTestId("provider-list").textContent).not.toContain(
-      "deepseek-copy",
-    );
-
-    liveIdsSpy.mockRestore();
   });
 
   it("hosts the Skills check-update action in the App toolbar", async () => {
-    localStorage.setItem("cc-switch-last-view", "skills");
+    localStorage.setItem("bit2-switch-last-view", "skills");
     const { default: App } = await import("@/App");
     renderApp(App);
 
@@ -461,7 +389,7 @@ describe("App integration with MSW", () => {
   });
 
   it("routes the Skills discover toolbar action through the panel guard", async () => {
-    localStorage.setItem("cc-switch-last-view", "skills");
+    localStorage.setItem("bit2-switch-last-view", "skills");
     const { default: App } = await import("@/App");
     renderApp(App);
 

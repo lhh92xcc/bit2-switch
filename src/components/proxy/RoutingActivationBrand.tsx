@@ -85,7 +85,7 @@ export function RoutingActivationBrand({
       )}
 
       <motion.a
-        href="https://bit2switch.io"
+        href="https://bit2.ai"
         target="_blank"
         rel="noreferrer"
         className={cn(

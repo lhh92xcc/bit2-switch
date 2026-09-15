@@ -747,6 +747,9 @@ pub(crate) fn write_live_with_common_config_for_codex_oauth_manager(
     provider: &Provider,
     codex_oauth_manager: &Arc<CodexOAuthManager>,
 ) -> Result<(), AppError> {
+    if super::is_keychain_codex_provider(app_type, provider) {
+        return Ok(());
+    }
     let effective_provider = build_effective_provider_for_live_with_codex_oauth_manager(
         db,
         app_type,
@@ -1279,6 +1282,9 @@ impl LiveSnapshot {
 
 /// Write live configuration snapshot for a provider
 pub(crate) fn write_live_snapshot(app_type: &AppType, provider: &Provider) -> Result<(), AppError> {
+    if super::is_keychain_codex_provider(app_type, provider) {
+        return Ok(());
+    }
     match app_type {
         AppType::Claude => {
             let path = get_claude_settings_path();
@@ -1491,6 +1497,9 @@ pub(crate) fn sync_current_provider_for_app_to_live(
 
         let providers = state.db.get_all_providers(app_type.as_str())?;
         if let Some(provider) = providers.get(&current_id) {
+            if super::is_keychain_codex_provider(app_type, provider) {
+                return Ok(());
+            }
             write_live_with_common_config_for_state(state, app_type, provider)?;
         }
     }

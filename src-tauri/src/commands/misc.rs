@@ -1,5 +1,9 @@
 #![allow(non_snake_case)]
 
+#[cfg(target_os = "macos")]
+#[path = "codex_install.rs"]
+mod codex_install;
+
 use crate::app_config::AppType;
 use crate::init_status::{InitErrorPayload, SkillsMigrationPayload};
 use crate::services::ProviderService;
@@ -189,6 +193,11 @@ pub async fn run_tool_lifecycle_action(
         return Err("No supported tools selected".to_string());
     }
 
+    #[cfg(target_os = "macos")]
+    if requested == ["codex"] && (matches!(action, ToolLifecycleAction::Install) || codex_install::executable().exists()) {
+        return codex_install::install(codex_install::bin_dir()).await;
+    }
+
     let label = match action {
         ToolLifecycleAction::Install => "tool_install",
         ToolLifecycleAction::Update => "tool_update",
@@ -205,25 +214,13 @@ pub async fn run_tool_lifecycle_action(
     .map_err(|e| format!("tool lifecycle task join error: {e}"))?
 }
 
-/// Store a quick-setup secret in the macOS Keychain. The value is passed via
-/// stdin so it never appears in the process argument list.
+/// Store quick-setup credentials through the native Keychain API; never a process argument.
 #[tauri::command]
 pub async fn store_bit2_secret(service: String, account: String, secret: String) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        use std::io::Write;
-        let mut child = std::process::Command::new("security")
-            .args(["add-generic-password", "-U", "-s", &service, "-a", &account, "-w"])
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::piped())
-            .spawn().map_err(|e| format!("Keychain unavailable: {e}"))?;
-        child.stdin.take().unwrap().write_all(secret.as_bytes()).map_err(|e| e.to_string())?;
-        let output = child.wait_with_output().map_err(|e| e.to_string())?;
-        if output.status.success() { Ok(()) } else { Err(String::from_utf8_lossy(&output.stderr).trim().to_string()) }
+    if service != "bit2-switch" {
+        return Err("Invalid credential service".into());
     }
-    #[cfg(not(target_os = "macos"))]
-    { let _ = (service, account, secret); Err("macOS Keychain is only available on macOS".into()) }
+    crate::bit2_api::store_setup_api_key(&account, &secret)
 }
 
 /// 静默执行工具安装/更新脚本：直接捕获子进程输出并阻塞到命令真正结束，
@@ -1146,6 +1143,21 @@ enum ShellProbe {
 fn try_get_version(tool: &str) -> ShellProbe {
     use std::process::Command;
 
+    #[cfg(target_os = "macos")]
+    if tool == "codex" && codex_install::executable().exists() {
+        return match run_probe_version_command(&codex_install::executable(), std::ffi::OsStr::new("/usr/bin:/bin:/usr/sbin:/sbin")) {
+            Ok(output) if output.status.success() => {
+                let version = String::from_utf8_lossy(&output.stdout);
+                if version.trim().starts_with("codex-cli ") {
+                    ShellProbe::Found(extract_version(&version))
+                } else {
+                    ShellProbe::FoundButFailed("App-owned Codex returned an invalid version".into())
+                }
+            }
+            _ => ShellProbe::FoundButFailed("App-owned Codex could not run; reinstall or update it".into()),
+        };
+    }
+
     let output = {
         let shell = std::env::var("SHELL")
             .ok()
@@ -1794,6 +1806,10 @@ fn build_tool_search_paths(tool: &str) -> Vec<std::path::PathBuf> {
 
     // 常见的安装路径（原生安装优先）
     let mut search_paths: Vec<std::path::PathBuf> = Vec::new();
+    #[cfg(target_os = "macos")]
+    if tool == "codex" {
+        push_unique_path(&mut search_paths, codex_install::bin_dir());
+    }
     if tool == "grok" {
         let extra_paths = grok_extra_search_paths(&home, std::env::var_os("GROK_BIN_DIR"));
         for path in extra_paths {
@@ -3802,15 +3818,171 @@ pub async fn open_provider_terminal(
         .get(&providerId)
         .ok_or_else(|| format!("提供商 {providerId} 不存在"))?;
 
-    // 从提供商配置中提取环境变量
-    let config = &provider.settings_config;
-    let env_vars = extract_env_vars_from_config(config, &app_type);
-
-    // 根据平台启动终端，传入提供商ID用于生成唯一的配置文件名
-    launch_terminal_with_env(env_vars, &providerId, launch_cwd.as_deref())
-        .map_err(|e| format!("启动终端失败: {e}"))?;
+    match app_type {
+        AppType::Codex => {
+            let provider = provider.clone();
+            tokio::task::spawn_blocking(move || launch_codex_provider(&provider, launch_cwd.as_deref()))
+                .await.map_err(|_| "Codex launcher task failed".to_string())??;
+        }
+        AppType::Claude => {
+            let env_vars = extract_env_vars_from_config(&provider.settings_config, &app_type);
+            launch_terminal_with_env(env_vars, &providerId, launch_cwd.as_deref())?;
+        }
+        _ => return Err("Terminal launch is not supported for this application".into()),
+    }
 
     Ok(true)
+}
+
+/// Keep model preferences and the selected endpoint, excluding all credential,
+/// profile, header, MCP, and executable overrides from the private snapshot.
+fn build_codex_launch_config(settings: &serde_json::Value) -> Result<String, String> {
+    let raw = settings.get("config").and_then(serde_json::Value::as_str)
+        .ok_or_else(|| "Codex provider config is missing".to_string())?;
+    let parsed: toml::Value = toml::from_str(raw)
+        .map_err(|_| "Codex provider config is invalid TOML".to_string())?;
+    let selected = parsed.get("model_provider").and_then(toml::Value::as_str)
+        .filter(|s| !s.is_empty()).ok_or_else(|| "Codex model_provider is missing".to_string())?;
+    let source = parsed.get("model_providers").and_then(|p| p.get(selected))
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| "Selected Codex model provider is missing".to_string())?;
+    let base = source.get("base_url").and_then(toml::Value::as_str)
+        .ok_or_else(|| "Selected Codex base_url is missing".to_string())?;
+    let endpoint = url::Url::parse(base).map_err(|_| "Codex base_url is invalid".to_string())?;
+    if !matches!(endpoint.scheme(), "http" | "https") || endpoint.host_str().is_none()
+        || !endpoint.username().is_empty() || endpoint.password().is_some()
+        || endpoint.query().is_some() || endpoint.fragment().is_some() {
+        return Err("Codex base_url must be an HTTP(S) endpoint without credentials".into());
+    }
+    let mut snapshot = toml::map::Map::new();
+    for key in ["model", "model_reasoning_effort", "model_reasoning_summary", "model_verbosity",
+        "model_context_window", "model_auto_compact_token_limit", "approval_policy", "sandbox_mode",
+        "web_search", "service_tier", "hide_agent_reasoning", "show_raw_agent_reasoning"] {
+        if let Some(value) = parsed.get(key) { snapshot.insert(key.into(), value.clone()); }
+    }
+    snapshot.entry("approval_policy".to_string()).or_insert_with(|| toml::Value::String("on-request".into()));
+    snapshot.entry("sandbox_mode".to_string()).or_insert_with(|| toml::Value::String("workspace-write".into()));
+    snapshot.insert("model_provider".into(), toml::Value::String(selected.into()));
+    snapshot.insert("cli_auth_credentials_store".into(), toml::Value::String("ephemeral".into()));
+    let mut active = toml::map::Map::new();
+    active.insert("name".into(), toml::Value::String(source.get("name").and_then(toml::Value::as_str).unwrap_or(selected).into()));
+    active.insert("base_url".into(), toml::Value::String(base.into()));
+    active.insert("wire_api".into(), toml::Value::String("responses".into()));
+    active.insert("env_key".into(), toml::Value::String("BIT2_CODEX_API_KEY".into()));
+    for key in ["request_max_retries", "stream_max_retries", "stream_idle_timeout_ms", "supports_websockets"] {
+        if let Some(value) = source.get(key) { active.insert(key.into(), value.clone()); }
+    }
+    let mut providers = toml::map::Map::new();
+    providers.insert(selected.into(), toml::Value::Table(active));
+    snapshot.insert("model_providers".into(), toml::Value::Table(providers));
+    toml::to_string(&snapshot).map_err(|_| "Unable to prepare Codex config".to_string())
+}
+
+/// Pin the selection above project configuration layers. A fresh table name keeps
+/// project provider headers and authentication settings out of this launch.
+fn pin_codex_launch_config(config: &str, launch_id: &str) -> Result<(String, Vec<String>), String> {
+    let mut snapshot: toml::Value = toml::from_str(config).map_err(|_| "Codex config is invalid".to_string())?;
+    let selected = snapshot.get("model_provider").and_then(toml::Value::as_str)
+        .ok_or_else(|| "Codex model_provider is missing".to_string())?.to_string();
+    let pinned = format!("bit2_launch_{}", launch_id.replace('-', "_"));
+    let providers = snapshot.get_mut("model_providers").and_then(toml::Value::as_table_mut)
+        .ok_or_else(|| "Codex model providers are missing".to_string())?;
+    let provider = providers.remove(&selected).ok_or_else(|| "Codex model provider is missing".to_string())?;
+    providers.insert(pinned.clone(), provider);
+    snapshot["model_provider"] = toml::Value::String(pinned.clone());
+    let mut overrides: Vec<String> = snapshot.as_table().unwrap().iter()
+        .filter(|(_, value)| !value.is_table())
+        .map(|(key, value)| format!("{key}={value}"))
+        .collect();
+    for (key, value) in snapshot["model_providers"][&pinned].as_table().unwrap() {
+        overrides.push(format!("model_providers.{pinned}.{key}={value}"));
+    }
+    overrides.push(format!("model_providers.{pinned}.requires_openai_auth=false"));
+    Ok((toml::to_string(&snapshot).map_err(|_| "Unable to prepare Codex config".to_string())?, overrides))
+}
+
+#[cfg(target_os = "macos")]
+fn launch_codex_provider(provider: &crate::provider::Provider, cwd: Option<&Path>) -> Result<(), String> {
+    let launch_id = uuid::Uuid::new_v4();
+    let (config, overrides) = pin_codex_launch_config(&build_codex_launch_config(&provider.settings_config)?, &launch_id.to_string())?;
+    let credential = provider.settings_config.pointer("/auth/OPENAI_API_KEY")
+        .and_then(serde_json::Value::as_str).ok_or_else(|| "Codex API key is missing".to_string())?;
+    // Resolve before creating files or opening Terminal: missing references must fail closed.
+    let key = crate::bit2_api::load_provider_api_key(credential)?;
+    let existing_account = crate::bit2_api::provider_keychain_account(credential)?;
+    let search_paths = build_tool_search_paths("codex");
+    let owned = codex_install::executable();
+    let executable = is_executable_file(&owned).then_some(owned)
+        .or_else(|| resolve_path_default("codex", CommandDeadline::from_timeout(Some(INSTALL_PROBE_TIMEOUT)))
+            .ok().flatten().filter(|path| is_executable_file(path)))
+        .or_else(|| search_paths.iter().map(|dir| dir.join("codex")).find(|path| is_executable_file(path)))
+        .ok_or_else(|| "Codex CLI is not installed; install it before launching".to_string())?;
+    let mut paths = search_paths;
+    if let Some(parent) = executable.parent() { paths.insert(0, parent.to_path_buf()); }
+    let launch_path = std::env::join_paths(paths).map_err(|_| "Codex executable PATH is invalid".to_string())?;
+    let account = existing_account.clone().unwrap_or_else(|| format!("bit2-launch-{launch_id}"));
+    if existing_account.is_none() { crate::bit2_api::store_launch_api_key(&account, &key)?; }
+    drop(key);
+    let home = crate::config::get_app_config_dir().join("codex-runs").join(launch_id.to_string());
+    let result = (|| {
+        use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+        let runs = home.parent().expect("Codex runs parent");
+        std::fs::DirBuilder::new().recursive(true).mode(0o700).create(runs)
+            .map_err(|_| "Unable to create Codex runs directory".to_string())?;
+        std::fs::set_permissions(runs, std::fs::Permissions::from_mode(0o700))
+            .map_err(|_| "Unable to secure Codex runs directory".to_string())?;
+        write_private_codex_home(&home, &config)?;
+        let script = codex_launch_command(&executable, &home, &launch_path.to_string_lossy(), &account,
+            existing_account.is_none(), cwd, &overrides);
+        launch_terminal_running(&script, &format!("codex-{launch_id}"))
+    })();
+    if result.is_err() {
+        if existing_account.is_none() { let _ = crate::bit2_api::delete_launch_api_key(&account); }
+    }
+    result
+}
+
+#[cfg(target_os = "macos")]
+fn write_private_codex_home(home: &Path, config: &str) -> Result<(), String> {
+    use std::io::Write;
+    use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
+    std::fs::DirBuilder::new().mode(0o700).create(home)
+        .map_err(|_| "Unable to create private Codex directory".to_string())?;
+    let mut file = std::fs::OpenOptions::new().write(true).create_new(true).mode(0o600)
+        .open(home.join("config.toml")).map_err(|_| "Unable to create Codex config".to_string())?;
+    file.write_all(config.as_bytes()).map_err(|_| "Unable to write Codex config".to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn launch_codex_provider(_provider: &crate::provider::Provider, _cwd: Option<&Path>) -> Result<(), String> {
+    Err("Secure Codex launch is currently available on macOS".into())
+}
+
+#[cfg(target_os = "macos")]
+fn codex_launch_command(executable: &Path, home: &Path, path: &str, account: &str,
+    temporary: bool, cwd: Option<&Path>, overrides: &[String]) -> String {
+    let options = overrides.iter().map(|value| format!(" -c {}", shell_single_quote(value))).collect::<String>();
+    let delete = if temporary { format!("/usr/bin/security delete-generic-password -s bit2-switch -a {} >/dev/null 2>&1", shell_single_quote(account)) } else { ":".into() };
+    let cd = cwd.map(|dir| format!("cd {} || exit 1\n", shell_single_quote(&dir.to_string_lossy()))).unwrap_or_default();
+    let cleanup = shell_single_quote(&format!("unset BIT2_CODEX_API_KEY; {delete}"));
+    // Subshell EXIT cleanup does not replace launch_terminal_running's script cleanup trap.
+    format!(r#"(
+set +x
+umask 077
+trap {cleanup} EXIT
+{cd}export PATH={path}
+unset OPENAI_API_KEY OPENAI_BASE_URL CODEX_API_KEY CODEX_PROFILE
+if ! BIT2_CODEX_API_KEY="$(/usr/bin/security find-generic-password -s bit2-switch -a {account} -w 2>/dev/null)"; then
+  echo 'Codex credential is unavailable in Keychain.' >&2
+  {delete}
+  exit 1
+fi
+{delete}
+if [ -z "$BIT2_CODEX_API_KEY" ]; then echo 'Codex credential is empty.' >&2; exit 1; fi
+export BIT2_CODEX_API_KEY
+export CODEX_HOME={home}
+{executable}{options}
+)"#, home=shell_single_quote(&home.to_string_lossy()), path=shell_single_quote(path), account=shell_single_quote(account), executable=shell_single_quote(&executable.to_string_lossy()))
 }
 
 /// 从提供商配置中提取环境变量
@@ -3828,7 +4000,8 @@ fn extract_env_vars_from_config(
     if let Some(env) = obj.get("env").and_then(|v| v.as_object()) {
         for (key, value) in env {
             if let Some(str_val) = value.as_str() {
-                let value = resolve_bit2_keychain_ref(str_val).unwrap_or_else(|| str_val.to_string());
+                let value =
+                    resolve_bit2_keychain_ref(str_val).unwrap_or_else(|| str_val.to_string());
                 env_vars.push((key.clone(), value));
             }
         }
@@ -3849,7 +4022,11 @@ fn extract_env_vars_from_config(
 
     // Codex 使用 auth 字段转换为 OPENAI_API_KEY
     if *app_type == AppType::Codex {
-        if let Some(auth) = obj.get("auth").and_then(|v| v.get("OPENAI_API_KEY")).and_then(|v| v.as_str()) {
+        if let Some(auth) = obj
+            .get("auth")
+            .and_then(|v| v.get("OPENAI_API_KEY"))
+            .and_then(|v| v.as_str())
+        {
             let value = resolve_bit2_keychain_ref(auth).unwrap_or_else(|| auth.to_string());
             env_vars.push(("OPENAI_API_KEY".to_string(), value));
         }
@@ -3868,9 +4045,21 @@ fn extract_env_vars_from_config(
 fn resolve_bit2_keychain_ref(value: &str) -> Option<String> {
     let account = value.strip_prefix("bit2-keychain://")?;
     let output = std::process::Command::new("security")
-        .args(["find-generic-password", "-s", "bit2-switch", "-a", account, "-w"])
-        .output().ok()?;
-    if output.status.success() { Some(String::from_utf8_lossy(&output.stdout).trim().to_string()) } else { None }
+        .args([
+            "find-generic-password",
+            "-s",
+            "bit2-switch",
+            "-a",
+            account,
+            "-w",
+        ])
+        .output()
+        .ok()?;
+    if output.status.success() {
+        Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        None
+    }
 }
 
 fn resolve_launch_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, String> {
@@ -4878,6 +5067,146 @@ mod tests {
         let mode = if executable { 0o755 } else { 0o644 };
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode))
             .expect("fixture permissions should be set");
+    }
+
+    #[test]
+    fn codex_launch_snapshot_selects_config_and_removes_credential_overrides() {
+        let settings = serde_json::json!({"auth": {"OPENAI_API_KEY": "never-copy-this-key"}, "config": r#"
+model = "selected-model"
+model_provider = "relay"
+model_reasoning_effort = "high"
+experimental_bearer_token = "root-secret"
+[profiles.sneaky]
+model_provider = "other"
+[model_providers.relay]
+name = "Selected relay"
+base_url = "https://relay.example/v1"
+wire_api = "responses"
+api_key = "inline-secret"
+experimental_bearer_token = "bearer-secret"
+requires_openai_auth = true
+env_key = "WRONG_KEY"
+http_headers = { Authorization = "header-secret" }
+env_http_headers = { Authorization = "OTHER_AUTH" }
+[model_providers.other]
+base_url = "https://wrong.example/v1"
+"#});
+        let serialized = build_codex_launch_config(&settings).unwrap();
+        let parsed: toml::Value = toml::from_str(&serialized).unwrap();
+        assert_eq!(parsed["model"].as_str(), Some("selected-model"));
+        assert_eq!(parsed["model_reasoning_effort"].as_str(), Some("high"));
+        assert_eq!(parsed["model_provider"].as_str(), Some("relay"));
+        assert_eq!(parsed["model_providers"]["relay"]["base_url"].as_str(), Some("https://relay.example/v1"));
+        assert_eq!(parsed["model_providers"]["relay"]["env_key"].as_str(), Some("BIT2_CODEX_API_KEY"));
+        for forbidden in ["never-copy", "secret", "WRONG_KEY", "OTHER_AUTH", "wrong.example", "profiles", "requires_openai_auth"] {
+            assert!(!serialized.contains(forbidden), "snapshot retained {forbidden}");
+        }
+    }
+
+    #[test]
+    fn codex_launch_pins_selected_provider_above_project_configuration() {
+        let config = build_codex_launch_config(&serde_json::json!({"config":
+            "model = 'chosen-model'\nmodel_provider = 'relay'\n[model_providers.relay]\nbase_url = 'https://relay.example/v1'\n"})).unwrap();
+        let (pinned, overrides) = pin_codex_launch_config(&config, "unique-session").unwrap();
+        let parsed: toml::Value = toml::from_str(&pinned).unwrap();
+        assert_eq!(parsed["model_provider"].as_str(), Some("bit2_launch_unique_session"));
+        assert!(parsed["model_providers"].get("relay").is_none());
+        assert_eq!(parsed["model_providers"]["bit2_launch_unique_session"]["base_url"].as_str(), Some("https://relay.example/v1"));
+        assert!(overrides.iter().any(|arg| arg == "model_provider=\"bit2_launch_unique_session\""));
+        assert!(overrides.iter().any(|arg| arg == "model=\"chosen-model\""));
+    }
+
+    #[test]
+    fn codex_launch_rejects_missing_provider_and_unsafe_base_url() {
+        for config in [
+            "model = 'x'",
+            "model_provider = 'absent'",
+            "model_provider = 'x'\n[model_providers.x]\nbase_url = 'file:///tmp/api'",
+            "model_provider = 'x'\n[model_providers.x]\nbase_url = 'https://user:secret@api.example/v1'",
+            "model_provider = 'x'\n[model_providers.x]\nbase_url = 'https://api.example/v1?key=secret'",
+        ] {
+            assert!(build_codex_launch_config(&serde_json::json!({"config":config})).is_err());
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn codex_missing_keychain_reference_fails_without_plaintext_fallback() {
+        let reference = format!("bit2-keychain://codex-{}", uuid::Uuid::new_v4());
+        assert!(crate::bit2_api::load_provider_api_key(&reference).is_err());
+        assert!(crate::bit2_api::load_provider_api_key("keychain://other/account").is_err());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    #[ignore = "uses a dedicated temporary Keychain item and executes a fake local Codex CLI"]
+    fn codex_launch_script_uses_keychain_env_and_cleans_temporary_material() {
+        use std::os::unix::fs::PermissionsExt;
+        let fixture = tempfile::tempdir().unwrap();
+        let home = fixture.path().join("home with 'quote");
+        std::fs::create_dir(&home).unwrap();
+        let executable = fixture.path().join("fake codex");
+        std::fs::write(&executable, r#"#!/bin/sh
+[ "$BIT2_CODEX_API_KEY" = "$EXPECTED_TEST_KEY" ] || exit 40
+[ "$CODEX_HOME" = "$EXPECTED_TEST_HOME" ] || exit 41
+[ "$PWD" = "$EXPECTED_TEST_CWD" ] || exit 42
+[ -z "${OPENAI_API_KEY+x}" ] || exit 43
+printf 'session-work' > "$CODEX_HOME/session-history-test"
+printf 'selected-codex-launched\n'
+"#).unwrap();
+        std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let account = format!("bit2-launch-{}", uuid::Uuid::new_v4());
+        let key = format!("sk-test-{}", uuid::Uuid::new_v4());
+        crate::bit2_api::store_launch_api_key(&account, &key).unwrap();
+        let command = codex_launch_command(&executable, &home, "/usr/bin:/bin", &account, true, Some(fixture.path()), &[]);
+        assert!(!command.contains(&key));
+        let output = std::process::Command::new("/bin/sh").arg("-c").arg(command)
+            .env("EXPECTED_TEST_KEY", &key).env("EXPECTED_TEST_HOME", &home)
+            .env("EXPECTED_TEST_CWD", fixture.path()).env("OPENAI_API_KEY", "unrelated-key")
+            .output().unwrap();
+        let remaining = security_framework::passwords::get_generic_password("bit2-switch", &account);
+        let _ = crate::bit2_api::delete_launch_api_key(&account);
+        assert!(output.status.success(), "launcher failed: {}", String::from_utf8_lossy(&output.stderr));
+        assert_eq!(String::from_utf8_lossy(&output.stdout), "selected-codex-launched\n");
+        assert_eq!(std::fs::read_to_string(home.join("session-history-test")).unwrap(), "session-work",
+            "new Codex session history must survive launcher exit");
+        assert!(remaining.is_err(), "temporary Keychain item must be removed by the launcher");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn codex_snapshot_has_private_permissions_and_refuses_existing_directory() {
+        use std::os::unix::fs::PermissionsExt;
+        let fixture = tempfile::tempdir().unwrap();
+        let home = fixture.path().join("private");
+        write_private_codex_home(&home, "model = 'test'").unwrap();
+        assert_eq!(std::fs::metadata(&home).unwrap().permissions().mode() & 0o777, 0o700);
+        assert_eq!(std::fs::metadata(home.join("config.toml")).unwrap().permissions().mode() & 0o777, 0o600);
+        assert!(write_private_codex_home(&home, "replacement").is_err());
+        assert!(!home.join("auth.json").exists());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    #[ignore = "validates config with the installed Codex CLI without making an API request"]
+    fn codex_launch_config_is_accepted_by_installed_cli() {
+        let executable = resolve_path_default("codex", CommandDeadline::from_timeout(Some(INSTALL_PROBE_TIMEOUT)))
+            .unwrap().expect("installed Codex executable");
+        let config = build_codex_launch_config(&serde_json::json!({"config":
+            "model = 'gpt-5.2'\nmodel_provider = 'bit2'\n[model_providers.bit2]\nbase_url = 'https://bit2.ai/v1'\n"})).unwrap();
+        let fixture = tempfile::tempdir().unwrap();
+        let home = fixture.path().join("private");
+        let (config, overrides) = pin_codex_launch_config(&config, "cli-acceptance-test").unwrap();
+        write_private_codex_home(&home, &config).unwrap();
+        let mut command = std::process::Command::new(executable);
+        for value in overrides { command.arg("-c").arg(value); }
+        command.args(["features", "list"]).env("CODEX_HOME", &home)
+            .env_remove("OPENAI_API_KEY").env_remove("BIT2_CODEX_API_KEY")
+            .stdin(std::process::Stdio::null()).stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+        isolate_child_process_group(&mut command);
+        let output = wait_child_output(command.spawn().unwrap(), CommandDeadline::from_timeout(Some(INSTALL_PROBE_TIMEOUT))).unwrap();
+        assert!(output.status.success(), "config rejected: {}", String::from_utf8_lossy(&output.stderr));
     }
 
     #[test]

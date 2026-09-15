@@ -1,3 +1,4 @@
+import { UPDATER_ENABLED } from "@/lib/updater";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Download,
@@ -447,13 +448,13 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
 
       if (!displayVersion) {
         await settingsApi.openExternal(
-          "https://github.com/farion1231/bit2-switch/releases",
+          "https://github.com/lhh92xcc/bit2-switch/releases",
         );
         return;
       }
 
       await settingsApi.openExternal(
-        `https://github.com/farion1231/bit2-switch/releases/tag/${displayVersion}`,
+        `https://github.com/lhh92xcc/bit2-switch/releases/tag/${displayVersion}`,
       );
     } catch (error) {
       console.error("[AboutSection] Failed to open release notes", error);
@@ -462,6 +463,10 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
   }, [t, updateInfo?.availableVersion, version]);
 
   const handleCheckUpdate = useCallback(async () => {
+    if (!UPDATER_ENABLED) {
+      await settingsApi.openExternal("https://github.com/lhh92xcc/bit2-switch/releases");
+      return;
+    }
     if (hasUpdate) {
       if (isPortable) {
         try {
@@ -906,7 +911,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => settingsApi.openExternal("https://bit2switch.io")}
+              onClick={() => settingsApi.openExternal("https://bit2.ai")}
               className="h-8 gap-1.5 text-xs"
             >
               <Globe className="h-3.5 w-3.5" />
@@ -918,7 +923,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
               size="sm"
               onClick={() =>
                 settingsApi.openExternal(
-                  "https://github.com/farion1231/bit2-switch",
+                  "https://github.com/lhh92xcc/bit2-switch",
                 )
               }
               className="h-8 gap-1.5 text-xs"

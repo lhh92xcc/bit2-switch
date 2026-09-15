@@ -14,11 +14,17 @@ export { proxyApi } from "./proxy";
 export { openclawApi } from "./openclaw";
 export { sessionsApi } from "./sessions";
 export { workspaceApi } from "./workspace";
+import { invoke } from "@tauri-apps/api/core";
+
+export interface Bit2Status {
+  connected: boolean;
+  baseUrl: string | null;
+}
+
 export const bit2Api = {
-  async openLogin(origin = "https://bit2.ai") { await invoke("open_bit2_login", { origin }); },
-  async login(origin: string, username: string, password: string) {
-    return await invoke("bit2_login", { origin, username, password });
-  },
+  async openLoginWindow(): Promise<void> { await invoke("bit2_open_login_window"); },
+  async cancelLogin(): Promise<void> { await invoke("bit2_cancel_login"); },
+  async status(): Promise<Bit2Status> { return await invoke("bit2_status"); },
   async logout() { await invoke("bit2_logout"); },
 };
 export * as configApi from "./config";
@@ -38,4 +44,3 @@ export type {
   ManagedAuthStatus,
   ManagedAuthDeviceCodeResponse,
 } from "./auth";
-import { invoke } from "@tauri-apps/api/core";

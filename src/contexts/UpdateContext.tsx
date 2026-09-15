@@ -7,7 +7,7 @@ import React, {
   useRef,
 } from "react";
 import type { UpdateInfo } from "../lib/updater";
-import { checkForUpdate } from "../lib/updater";
+import { checkForUpdate, UPDATER_ENABLED } from "../lib/updater";
 import { extractErrorMessage } from "../utils/errorUtils";
 
 interface UpdateContextValue {
@@ -120,7 +120,7 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // 延迟1秒后检查，避免影响启动体验
     const timer = setTimeout(() => {
-      checkUpdate().catch(console.error);
+      if (UPDATER_ENABLED) checkUpdate().catch(console.error);
     }, 1000);
 
     return () => clearTimeout(timer);
