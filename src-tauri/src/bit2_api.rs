@@ -36,6 +36,22 @@ pub async fn login(origin: &str, username: &str, password: &str) -> Result<Bit2S
     Ok(Bit2Session { access_token: token, refresh_token: None, expires_at: None })
 }
 
+#[tauri::command]
+pub async fn bit2_login(origin: String, username: String, password: String) -> Result<Bit2Session, String> {
+    login(&origin, &username, &password).await
+}
+
+#[tauri::command]
+pub async fn bit2_logout() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("security").args(["delete-generic-password", "-s", "bit2-switch", "-a", "bit2-session"]).output();
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    { Ok(()) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

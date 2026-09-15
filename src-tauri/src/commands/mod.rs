@@ -72,3 +72,4 @@ pub use s3_sync::*;
 pub use usage::*;
 pub use webdav_sync::*;
 pub use workspace::*;
+pub use crate::bit2_api::{bit2_login, bit2_logout};
