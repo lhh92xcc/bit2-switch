@@ -14,6 +14,12 @@ export { proxyApi } from "./proxy";
 export { openclawApi } from "./openclaw";
 export { sessionsApi } from "./sessions";
 export { workspaceApi } from "./workspace";
+export const bit2Api = {
+  async login(origin: string, username: string, password: string) {
+    return await invoke("bit2_login", { origin, username, password });
+  },
+  async logout() { await invoke("bit2_logout"); },
+};
 export * as configApi from "./config";
 export * as authApi from "./auth";
 export * as copilotApi from "./copilot";
@@ -31,3 +37,4 @@ export type {
   ManagedAuthStatus,
   ManagedAuthDeviceCodeResponse,
 } from "./auth";
+import { invoke } from "@tauri-apps/api/core";
