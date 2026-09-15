@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Provider } from "@/types";
 import type { AppId } from "@/lib/api";
+import { settingsApi } from "@/lib/api";
 import { generateThirdPartyConfig } from "@/config/codexProviderPresets";
 
 type QuickApp = Extract<AppId, "claude" | "codex">;
@@ -77,6 +78,13 @@ export function QuickSetupDialog({ open, onOpenChange, onComplete }: QuickSetupD
         };
 
     try {
+      // Make the selected CLI ready before applying its configuration.
+      const [status] = await settingsApi.getToolVersions([app]);
+      if (!status?.version) {
+        await settingsApi.runToolLifecycleAction([app], "install");
+      } else if (status.latest_version && status.latest_version !== status.version) {
+        await settingsApi.runToolLifecycleAction([app], "update");
+      }
       await onComplete(app, provider);
       onOpenChange(false);
       reset();
