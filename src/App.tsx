@@ -109,6 +109,7 @@ import ToolsPanel from "@/components/openclaw/ToolsPanel";
 import AgentsDefaultsPanel from "@/components/openclaw/AgentsDefaultsPanel";
 import OpenClawHealthBanner from "@/components/openclaw/OpenClawHealthBanner";
 import HermesMemoryPanel from "@/components/hermes/HermesMemoryPanel";
+import { listen } from "@tauri-apps/api/event";
 import {
   APP_IDS,
   DEFAULT_VISIBLE_APPS,
@@ -204,6 +205,15 @@ function App() {
   useEffect(() => {
     localStorage.setItem(VIEW_STORAGE_KEY, currentView);
   }, [currentView]);
+
+  useEffect(() => {
+    let dispose: (() => void) | undefined;
+    void listen<string>("bit2-auth-callback", () => {
+      setIsBit2LoginOpen(false);
+      toast.success("bit2.ai 登录完成，请点击同步 Codex");
+    }).then((fn) => { dispose = fn; });
+    return () => dispose?.();
+  }, []);
 
   const { data: settingsData } = useSettingsQuery();
   const useAppWindowControls =
