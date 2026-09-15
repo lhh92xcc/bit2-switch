@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }
+button { letter-spacing: .01em; }
+.bg-card { box-shadow: 0 14px 40px rgba(4, 18, 24, .08); }
+.dark .bg-card { box-shadow: 0 18px 50px rgba(0, 0, 0, .28); }
+.rounded-lg { border-radius: .65rem; }
+.rounded-xl { border-radius: .85rem; }
+
 @layer base {
   :root {
     --background: 220 20% 97%;
