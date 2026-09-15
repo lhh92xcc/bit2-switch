@@ -6,7 +6,7 @@
 
 bit2-switch 是基于 [CC Switch](https://github.com/farion1231/cc-switch) MIT 开源项目的修改发行版，由 bit2.ai 维护。上游版权和许可证信息保留在 [LICENSE](LICENSE) 与 [NOTICE.md](NOTICE.md)。
 
-[![Version](https://img.shields.io/github/v/release/farion1231/cc-switch?color=blue&label=version)](https://github.com/farion1231/cc-switch/releases)
+[![Version](https://img.shields.io/github/v/release/lhh92xcc/bit2-switch?color=blue&label=version)](https://github.com/lhh92xcc/bit2-switch/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/farion1231/cc-switch/releases)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-orange.svg)](https://tauri.app/)
 [![Downloads](https://img.shields.io/github/downloads/farion1231/cc-switch/total)](https://github.com/farion1231/cc-switch/releases/latest)
@@ -14,7 +14,7 @@ bit2-switch 是基于 [CC Switch](https://github.com/farion1231/cc-switch) MIT �
 <a href="https://trendshift.io/repositories/15372" target="_blank"><img src="https://trendshift.io/api/badge/repositories/15372" alt="farion1231%2Fcc-switch | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 <a href="https://www.star-history.com/#farion1231/cc-switch&Date"><picture><source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/badge?repo=farion1231/cc-switch&theme=dark" /><img alt="Star History Rank" src="https://api.star-history.com/badge?repo=farion1231/cc-switch" width="196" height="55" /></picture></a>
 
-### 🌐 唯一官方网站：**[ccswitch.io](https://ccswitch.io)**
+### 🌐 官网：**[bit2.ai](https://bit2.ai)**
 
 [English](README.md) | 中文 | [日本語](README_JA.md) | [Deutsch](README_DE.md) | [更新日志](CHANGELOG.md)
 
