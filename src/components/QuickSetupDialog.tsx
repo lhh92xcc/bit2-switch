@@ -85,6 +85,7 @@ export function QuickSetupDialog({ open, onOpenChange, onComplete }: QuickSetupD
       } else if (status.latest_version && status.latest_version !== status.version) {
         await settingsApi.runToolLifecycleAction([app], "update");
       }
+      await settingsApi.storeBit2Secret("bit2-switch", `${app}-${provider.id}`, trimmedKey);
       await onComplete(app, provider);
       onOpenChange(false);
       reset();

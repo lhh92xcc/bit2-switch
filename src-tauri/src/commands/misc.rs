@@ -205,6 +205,27 @@ pub async fn run_tool_lifecycle_action(
     .map_err(|e| format!("tool lifecycle task join error: {e}"))?
 }
 
+/// Store a quick-setup secret in the macOS Keychain. The value is passed via
+/// stdin so it never appears in the process argument list.
+#[tauri::command]
+pub async fn store_bit2_secret(service: String, account: String, secret: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::io::Write;
+        let mut child = std::process::Command::new("security")
+            .args(["add-generic-password", "-U", "-s", &service, "-a", &account, "-w"])
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::piped())
+            .spawn().map_err(|e| format!("Keychain unavailable: {e}"))?;
+        child.stdin.take().unwrap().write_all(secret.as_bytes()).map_err(|e| e.to_string())?;
+        let output = child.wait_with_output().map_err(|e| e.to_string())?;
+        if output.status.success() { Ok(()) } else { Err(String::from_utf8_lossy(&output.stderr).trim().to_string()) }
+    }
+    #[cfg(not(target_os = "macos"))]
+    { let _ = (service, account, secret); Err("macOS Keychain is only available on macOS".into()) }
+}
+
 /// 静默执行工具安装/更新脚本：直接捕获子进程输出并阻塞到命令真正结束，
 /// 不再弹出可见终端窗口（与 `launch_terminal_running` 的"开窗即返回"形成对比，
 /// 后者仍保留给 provider 切换等需要交互式终端的场景）。

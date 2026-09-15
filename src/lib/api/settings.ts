@@ -268,6 +268,10 @@ export const settingsApi = {
     });
   },
 
+  async storeBit2Secret(service: string, account: string, secret: string): Promise<void> {
+    await invoke("store_bit2_secret", { service, account, secret });
+  },
+
   /** 探测各工具安装分布：枚举所有安装、标记冲突、生成锚定升级命令。
    *  诊断按钮、升级前确认、升级后补诊共用此命令，各取所需字段。 */
   async probeToolInstallations(
