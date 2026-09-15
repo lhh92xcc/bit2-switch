@@ -3828,7 +3828,8 @@ fn extract_env_vars_from_config(
     if let Some(env) = obj.get("env").and_then(|v| v.as_object()) {
         for (key, value) in env {
             if let Some(str_val) = value.as_str() {
-                env_vars.push((key.clone(), str_val.to_string()));
+                let value = resolve_bit2_keychain_ref(str_val).unwrap_or_else(|| str_val.to_string());
+                env_vars.push((key.clone(), value));
             }
         }
 
@@ -3848,8 +3849,9 @@ fn extract_env_vars_from_config(
 
     // Codex 使用 auth 字段转换为 OPENAI_API_KEY
     if *app_type == AppType::Codex {
-        if let Some(auth) = obj.get("auth").and_then(|v| v.as_str()) {
-            env_vars.push(("OPENAI_API_KEY".to_string(), auth.to_string()));
+        if let Some(auth) = obj.get("auth").and_then(|v| v.get("OPENAI_API_KEY")).and_then(|v| v.as_str()) {
+            let value = resolve_bit2_keychain_ref(auth).unwrap_or_else(|| auth.to_string());
+            env_vars.push(("OPENAI_API_KEY".to_string(), value));
         }
     }
 
@@ -3861,6 +3863,14 @@ fn extract_env_vars_from_config(
     }
 
     env_vars
+}
+
+fn resolve_bit2_keychain_ref(value: &str) -> Option<String> {
+    let account = value.strip_prefix("bit2-keychain://")?;
+    let output = std::process::Command::new("security")
+        .args(["find-generic-password", "-s", "bit2-switch", "-a", account, "-w"])
+        .output().ok()?;
+    if output.status.success() { Some(String::from_utf8_lossy(&output.stdout).trim().to_string()) } else { None }
 }
 
 fn resolve_launch_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, String> {

@@ -48,9 +48,10 @@ export function QuickSetupDialog({ open, onOpenChange, onComplete }: QuickSetupD
     setError(null);
     const trimmedUrl = baseUrl.trim().replace(/\/+$/, "");
     const trimmedKey = apiKey.trim();
+    const providerId = crypto.randomUUID();
     const provider: Provider = app === "claude"
       ? {
-          id: crypto.randomUUID(),
+          id: providerId,
           name: "bit2.ai",
           websiteUrl: "https://bit2.ai",
           category: "custom",
@@ -59,20 +60,20 @@ export function QuickSetupDialog({ open, onOpenChange, onComplete }: QuickSetupD
           settingsConfig: {
             env: {
               ANTHROPIC_BASE_URL: trimmedUrl,
-              ANTHROPIC_AUTH_TOKEN: trimmedKey,
+              ANTHROPIC_AUTH_TOKEN: `bit2-keychain://claude-${providerId}`,
               ...(model.trim() ? { ANTHROPIC_MODEL: model.trim() } : {}),
             },
           },
         }
       : {
-          id: crypto.randomUUID(),
+          id: providerId,
           name: "bit2.ai",
           websiteUrl: "https://bit2.ai",
           category: "custom",
           icon: "bit2",
           iconColor: "#E78242",
           settingsConfig: {
-            auth: { OPENAI_API_KEY: trimmedKey },
+            auth: { OPENAI_API_KEY: `bit2-keychain://codex-${providerId}` },
             config: generateThirdPartyConfig("bit2.ai", trimmedUrl, model.trim() || "gpt-5.6-sol"),
           },
         };
