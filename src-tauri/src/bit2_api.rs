@@ -26,6 +26,16 @@ pub fn codex_api_url(origin: &str) -> Result<String, String> {
     Ok(format!("{}/v1", normalize_origin(origin)?))
 }
 
+pub async fn login(origin: &str, username: &str, password: &str) -> Result<Bit2Session, String> {
+    let url = format!("{}/api/user/login", normalize_origin(origin)?);
+    let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(20)).build().map_err(|e| e.to_string())?;
+    let response = client.post(url).json(&serde_json::json!({"username": username, "password": password})).send().await.map_err(|_| "bit2.ai 登录请求失败".to_string())?;
+    if !response.status().is_success() { return Err(format!("bit2.ai 登录失败（HTTP {}）", response.status())); }
+    let token = response.headers().get("Authorization").and_then(|v| v.to_str().ok()).unwrap_or("").trim_start_matches("Bearer ").to_string();
+    if token.is_empty() { return Err("登录成功但服务端未返回访问令牌，请使用网页登录".into()); }
+    Ok(Bit2Session { access_token: token, refresh_token: None, expires_at: None })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
