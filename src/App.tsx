@@ -91,6 +91,7 @@ import UnifiedSkillsPanel, {
 } from "@/components/skills/UnifiedSkillsPanel";
 import { DeepLinkImportDialog } from "@/components/DeepLinkImportDialog";
 import { FirstRunNoticeDialog } from "@/components/FirstRunNoticeDialog";
+import { QuickSetupDialog } from "@/components/QuickSetupDialog";
 import { AgentsPanel } from "@/components/agents/AgentsPanel";
 import { UniversalProviderPanel } from "@/components/universal";
 import { McpIcon } from "@/components/BrandIcons";
@@ -185,6 +186,7 @@ function App() {
     useState<SkillsPageSource>("repos");
   const [settingsDefaultTab, setSettingsDefaultTab] = useState("general");
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isQuickSetupOpen, setIsQuickSetupOpen] = useState(false);
   const [isWindowMaximized, setIsWindowMaximized] = useState(false);
   const [mcpManagementBusy, setMcpManagementBusy] = useState(false);
   const [skillsManagementBusy, setSkillsManagementBusy] = useState(false);
@@ -938,6 +940,16 @@ function App() {
         }) + (errorMessage ? `: ${errorMessage}` : ""),
       );
     }
+  };
+
+  const handleQuickSetup = async (app: "claude" | "codex", provider: Provider) => {
+    await providersApi.add(provider, app, true);
+    await providersApi.switch(provider.id, app);
+    await providersApi.openTerminal(provider.id, app);
+    await queryClient.invalidateQueries({ queryKey: ["providers"] });
+    setActiveApp(app);
+    setCurrentView("providers");
+    toast.success(`${app === "claude" ? "Claude Code" : "Codex"} 配置已保存，终端已打开`);
   };
 
   const handleImportSuccess = async () => {
@@ -1824,10 +1836,13 @@ function App() {
       <DeepLinkImportDialog />
       <FirstRunNoticeDialog
         onStartSetup={() => {
-          setActiveApp("claude");
-          setCurrentView("providers");
-          setIsAddOpen(true);
+          setIsQuickSetupOpen(true);
         }}
+      />
+      <QuickSetupDialog
+        open={isQuickSetupOpen}
+        onOpenChange={setIsQuickSetupOpen}
+        onComplete={handleQuickSetup}
       />
     </div>
   );
